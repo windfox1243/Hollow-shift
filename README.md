@@ -1,19 +1,16 @@
 # HOLLOW SHIFT
 
-Game kinh dị sinh tồn góc nhìn từ trên xuống, viết hoàn toàn bằng Java SE:
-- không dùng thư viện ngoài, không có code native;
-- không cần cài Maven hay Gradle.
+Game kinh dị sinh tồn 2d
 
-Đây là dự án nghiên cứu, phi thương mại.
-
+Giới thiệu:
 Bạn là thợ mỏ ca đêm ở Hầm 9. Tổ ca ngày xuống hầm từ sáng rồi không ai lên lại. Nhiệm vụ của bạn là tìm cầu chì, cấp điện cho các hộp điện rồi đi thang máy lên. Nhưng dưới đó còn có một thứ khác.
 
-Đầu mỗi ca, game công bố **luật chơi**: nó cảm nhận bạn bằng cách nào (nhìn, nghe, ngửi, cảm nhận rung chấn, đi theo tiếng vọng…), và ngoài nó ra còn thứ gì có thể giết bạn (giá lạnh, cái đói, đèn hết pin).
+Đầu mỗi ca, game công bố luật chơi: nó cảm nhận bạn bằng cách nào (nhìn, nghe, ngửi, cảm nhận rung chấn, đi theo tiếng vọng…), và ngoài nó ra còn thứ gì có thể giết bạn (giá lạnh, cái đói, đèn hết pin).
 
 ## Có gì trong game
 - Cốt truyện hé lộ dần qua lời dẫn mỗi ca và 10 mẩu giấy rải trong hầm. Game có **hai kết thúc**, một trong số đó là kết thúc ẩn.
-- **Chế độ vô tận**: Tạo bởi seed :v
-- Hỗ trợ **tiếng Việt và tiếng Anh**.
+- Chế độ vô tận: Tạo bởi seed :v
+- Hỗ trợ tiếng Việt và tiếng Anh.
 
 ## Yêu cầu
 - JDK 21 trở lên (đã thử trên JDK 27).
