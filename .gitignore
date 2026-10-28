@@ -1,0 +1,10 @@
+# build output (recreate with: java tools/Build.java jar)
+build/
+dist/
+
+# editor / OS clutter
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

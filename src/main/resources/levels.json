@@ -1,0 +1,33 @@
+// HOLLOW SHIFT story campaign (original content): layout and difficulty per shift.
+// Shifts are only numbered; intros, tips and the ending are in lang/<code>.json.
+// rules: SIGHT HEARING SMELL TREMOR ECHO HASTE BATTERY COLD HUNGER
+{
+  "shifts": [
+    {
+      "cellsW": 3, "cellsH": 3, "rooms": 5, "fuses": 2,
+      "creatureSpeed": 0.9,
+      "rules": []
+    },
+    {
+      "cellsW": 4, "cellsH": 3, "rooms": 7, "fuses": 3,
+      "creatureSpeed": 1.0,
+      "rules": ["HEARING"]
+    },
+    {
+      "cellsW": 4, "cellsH": 4, "rooms": 9, "fuses": 3,
+      "creatureSpeed": 1.0,
+      "rules": ["SIGHT", "COLD"]
+    },
+    {
+      "cellsW": 5, "cellsH": 4, "rooms": 11, "fuses": 4,
+      "creatureSpeed": 1.05,
+      "rules": ["SMELL", "ECHO", "BATTERY"]
+    },
+    {
+      "cellsW": 0, "cellsH": 0, "rooms": 0, "fuses": 0,
+      "creatureSpeed": 1.05,
+      "rules": ["SIGHT", "HEARING", "TREMOR", "COLD"],
+      "finale": true
+    }
+  ]
+}

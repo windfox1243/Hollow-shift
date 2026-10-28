@@ -1,0 +1,23 @@
+// Sprite name -> region of a sheet under /assets. Optional "tint" multiplies the colours.
+// Sheet: Kenney "Tiny Dungeon" (CC0), 12 x 11 tiles of 16 px; tile i is at x = (i % 12) * 16, y = (i / 12) * 16.
+// Sprites not listed here (Tenant, fuse, fuse box, lift, lamp, heater...) are drawn in code.
+{
+  "tile_floor_0": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 0,  "y": 64, "tint": "#8c7c70"},
+  "tile_floor_1": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 16, "y": 64, "tint": "#8c7c70"},
+  "tile_floor_2": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 48, "y": 64, "tint": "#8c7c70"},
+  "tile_floor_3": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 0,  "y": 64, "tint": "#8c7c70"},
+  "tile_moss_0":  {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 0,  "y": 64, "tint": "#5e9478"},
+  "tile_moss_1":  {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 16, "y": 64, "tint": "#5e9478"},
+  "tile_plank_0": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 16, "y": 48},
+  "tile_plank_1": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 48},
+  "tile_wall_0":  {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 16, "y": 0, "tint": "#6e5c5c"},
+  "tile_wall_1":  {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 16, "y": 0, "tint": "#6e5c5c"},
+  "tile_wall_face_0": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 64, "y": 48},
+  "tile_wall_face_1": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 64, "y": 48},
+  "crate":        {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 48, "y": 80},
+  "player_0":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
+  "player_1":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
+  "player_2":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
+  "player_3":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
+  "item_stone":   {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 128}
+}

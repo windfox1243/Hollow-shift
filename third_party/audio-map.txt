@@ -1,0 +1,30 @@
+; Which CC0 recordings become which game sounds.
+; Converted to 16-bit mono WAV by: java tools/Build.java convert-audio
+; Format: <game sound name> = <ogg file relative to third_party/>
+; Names ending in _2, _3... are random variants of the same sound.
+
+step         = kenney_rpg_audio/footstep00.ogg
+step_2       = kenney_rpg_audio/footstep01.ogg
+step_3       = kenney_rpg_audio/footstep02.ogg
+step_4       = kenney_rpg_audio/footstep03.ogg
+step_5       = kenney_rpg_audio/footstep04.ogg
+step_soft    = kenney_rpg_audio/cloth1.ogg
+step_soft_2  = kenney_rpg_audio/cloth2.ogg
+grab         = kenney_rpg_audio/handleSmallLeather.ogg
+grab_2       = kenney_rpg_audio/handleSmallLeather2.ogg
+drop         = kenney_rpg_audio/dropLeather.ogg
+throw        = kenney_rpg_audio/clothBelt.ogg
+stone_land   = kenney_rpg_audio/chop.ogg
+fuse_insert  = kenney_rpg_audio/metalLatch.ogg
+lantern      = kenney_rpg_audio/metalClick.ogg
+eat          = kenney_rpg_audio/metalPot1.ogg
+
+ui_move      = kenney_interface_sounds/tick_002.ogg
+ui_select    = kenney_interface_sounds/confirmation_001.ogg
+ui_back      = kenney_interface_sounds/back_001.ogg
+type         = kenney_interface_sounds/click_001.ogg
+
+
+; provided by the project owner (Pixabay downloads, see CREDITS.md)
+chase_found  = user_audio/chase_tension.mp3
+scare_main   = user_audio/jumpscare.mp3

@@ -1,0 +1,25 @@
+# HOLLOW SHIFT
+a non-commercial research project
+
+# Design, code, rooms and writing
+The HOLLOW SHIFT project team
+
+# Engine
+Custom engine in pure Java SE
+Swing / Java2D rendering
+javax.sound software mixer
+
+# Art and sound
+Procedurally generated in code
+Tileset, font and some sounds: Kenney (CC0)
+Chase music: tomas_herudek (Pixabay)
+Jumpscare sound: kingcookiewastaken (Pixabay)
+Full licence details in CREDITS.md
+
+# Research
+Mechanics study of a Construct 3 game export
+documented in docs/RE_ANALYSIS.md
+No assets, maps or text were reused
+
+# Thank you for playing
+

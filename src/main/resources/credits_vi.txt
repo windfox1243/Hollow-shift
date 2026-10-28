@@ -1,0 +1,25 @@
+# HOLLOW SHIFT
+một dự án nghiên cứu phi thương mại
+
+# Thiết kế, lập trình, dựng phòng và viết truyện
+Nhóm thực hiện HOLLOW SHIFT
+
+# Engine
+Engine tự viết bằng Java SE thuần
+Đồ họa Swing / Java2D
+Bộ trộn âm thanh trên javax.sound
+
+# Hình ảnh và âm thanh
+Tileset, font và một phần âm thanh: Kenney (CC0)
+Nhạc rượt đuổi: tomas_herudek (Pixabay)
+Tiếng hù: kingcookiewastaken (Pixabay)
+Phần còn lại được vẽ và tổng hợp bằng code
+Chi tiết giấy phép nằm trong CREDITS.md
+
+# Nghiên cứu
+Tìm hiểu cơ chế từ một bản xuất của game Construct 3
+ghi lại trong docs/RE_ANALYSIS.md
+Không dùng lại asset, bản đồ hay lời thoại nào
+
+# Cảm ơn bạn đã chơi
+
