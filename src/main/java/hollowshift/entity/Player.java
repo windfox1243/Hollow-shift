@@ -15,8 +15,10 @@ import java.awt.image.BufferedImage;
 
 /** The miner. Moves, runs, carries one item and works the lantern. */
 public final class Player extends Entity implements LightSource {
-    public static final double WALK_SPEED = 64;
-    public static final double RUN_SPEED = 108;
+    // walking just outpaces the Tenant's opening chase (75 px/s); a long chase speeds it up
+    // past walking pace, so you have to run (as in the original, where the player is faster)
+    public static final double WALK_SPEED = 80;
+    public static final double RUN_SPEED = 120;
     // noise radii follow the original (footstep 175, pick-up 500 in 320 px rooms), scaled to 240 px rooms
     public static final double STEP_NOISE_WALK = 130;
     public static final double STEP_NOISE_RUN = 230;
@@ -75,7 +77,7 @@ public final class Player extends Entity implements LightSource {
         boolean wantRun = in.held(Action.RUN) && moving && !exhausted;
         running = wantRun;
         if (running) {
-            stamina -= dt / 3.5;
+            stamina -= dt / 4.0;
             if (stamina <= 0) {
                 stamina = 0;
                 exhausted = true;

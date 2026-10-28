@@ -9,11 +9,19 @@ import hollowshift.entity.Creature;
 public final class ChaseState extends CreatureState {
     /** Roughly the original's aggro budget: it keeps coming for a couple of seconds after losing you. */
     private static final double LOSE_AFTER = 2.5;
+    /** A whiff of scent only buys a short lunge, as in the original, then it has to sniff again. */
+    private static final double LOSE_AFTER_SCENT = 1.0;
     private double sinceSeen;
+    private double patience = LOSE_AFTER;
 
     /** Called whenever a strong stimulus confirms where the player is. */
     public void refresh() {
+        refresh(Stimulus.Kind.SIGHT);
+    }
+
+    public void refresh(Stimulus.Kind kind) {
         sinceSeen = 0;
+        patience = kind == Stimulus.Kind.SMELL ? LOSE_AFTER_SCENT : LOSE_AFTER;
     }
 
     @Override
@@ -29,7 +37,7 @@ public final class ChaseState extends CreatureState {
             return;
         }
         boolean arrived = c.walkTo(c.lastKnownX, c.lastKnownY, Gait.CHASE);
-        if (sinceSeen > LOSE_AFTER || (arrived && sinceSeen > 0.8)) {
+        if (sinceSeen > patience || (arrived && sinceSeen > 0.8)) {
             c.setState(new InvestigateState(c.lastKnownX, c.lastKnownY));
         }
     }

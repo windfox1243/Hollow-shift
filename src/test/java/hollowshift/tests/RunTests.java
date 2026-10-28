@@ -44,6 +44,7 @@ public final class RunTests {
         test("COLD rule freezes a player in the dark", RunTests::coldRule);
         test("the Tenant strides straight through a solid wall", RunTests::throughWalls);
         test("up close the Tenant grabs with its hands", RunTests::grab);
+        test("SMELL: a player who runs can shake off the Tenant", RunTests::outrunSmell);
         test("hidden ending: the crack opens only with all notes read", RunTests::hiddenEnding);
         test("every shift runs 90 simulated seconds with a random bot", RunTests::simulation);
         System.out.printf("%n%d passed, %d failed%n", passed, failed);
@@ -343,6 +344,30 @@ public final class RunTests {
         }
         check(reached, "Tenant never switched to grabbing");
         check(w.death() == DeathCause.TENANT, "player 45px away was not grabbed, death=" + w.death());
+    }
+
+    private static void outrunSmell() {
+        Services sv = services();
+        TileMap map = new TileMap(170, 12);
+        for (int y = 1; y < 11; y++) for (int x = 1; x < 169; x++) map.set(x, y, Tile.FLOOR);
+        ShiftDef def = new ShiftDef(4, "test", "", 0, 0, 0, 1, 0, 1.05, RuleSet.of(Rule.SMELL), false, false);
+        World w = new World(sv, def, map, new FuseObjectives(1), 1);
+        w.addRoomPoint(TileMap.center(5), TileMap.center(6));
+        w.add(new Player(TileMap.center(14), TileMap.center(6)));
+        Creature c = w.add(new Creature(TileMap.center(14) - 80, TileMap.center(6), 1.05));
+        w.start();
+        c.perceive(new hollowshift.ai.Stimulus(w.player.x, w.player.y, 1, hollowshift.ai.Stimulus.Kind.SMELL));
+        check(c.isChasing(), "setup: the Tenant should be on the player's trail");
+        sv.input().simulate(KeyEvent.VK_SHIFT, true);
+        sv.input().simulate(KeyEvent.VK_D, true);
+        sv.input().poll();
+        boolean lost = false;
+        for (int i = 0; i < 60 * 20 && w.death() == null; i++) {
+            tick(w, 1);
+            lost |= !c.isChasing() && c.distanceTo(w.player) > 200;
+        }
+        check(w.death() == null, "caught while running away (distance " + (int) c.distanceTo(w.player) + ")");
+        check(lost, "never shook it off, distance " + (int) c.distanceTo(w.player));
     }
 
     private static void hiddenEnding() {

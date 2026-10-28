@@ -34,6 +34,8 @@ public final class Creature extends Entity implements LightSource {
     private static final double GRAB_RADIUS = 10;
     private static final double PULL_TIME = 0.25;
     private static final double EYES_RANGE = 190;
+    /** Pace while squeezing through solid rock, relative to moving in the open. */
+    private static final double ROCK_PACE = 0.55;
     private static final int TENTACLES = 9;
     private static final double BODY_RADIUS = 24;
 
@@ -137,9 +139,13 @@ public final class Creature extends Entity implements LightSource {
         if (s.chase()) {
             lastKnownX = s.x();
             lastKnownY = s.y();
-            if (state instanceof ChaseState cs) cs.refresh();
+            if (state instanceof ChaseState cs) cs.refresh(s.kind());
             else if (state instanceof ReachState rs) rs.refresh();
-            else setState(new ChaseState());
+            else {
+                ChaseState chase = new ChaseState();
+                setState(chase);
+                chase.refresh(s.kind());
+            }
             return;
         }
         if (state.isChase()) return;
@@ -235,6 +241,11 @@ public final class Creature extends Entity implements LightSource {
         stepToY = y + Math.sin(angle) * length;
         stepDuration = (chase ? 0.3 : world.rng.range(0.3, 0.7)) / mult;
         stepCooldown = (chase ? 0.4 : world.rng.range(0.5, 1.6)) / mult;
+        // it can squeeze through rock, but slowly: open tunnels are where you outrun it
+        if (throughRock(stepFromX, stepFromY, stepToX, stepToY)) {
+            stepDuration /= ROCK_PACE;
+            stepCooldown /= ROCK_PACE;
+        }
         stepT = 0;
         if (chase && ++chaseSteps > 25) chaseBonus = Math.min(0.3, chaseBonus + 0.01);
 
@@ -258,6 +269,14 @@ public final class Creature extends Entity implements LightSource {
                         stepDuration * world.rng.range(0.6, 1.2), true);
             }
         }
+    }
+
+    private boolean throughRock(double x0, double y0, double x1, double y1) {
+        for (int i = 0; i <= 4; i++) {
+            double t = i / 4.0;
+            if (world.map.solidAt(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return true;
+        }
+        return false;
     }
 
     // ---- grabbing ---------------------------------------------------------------------
