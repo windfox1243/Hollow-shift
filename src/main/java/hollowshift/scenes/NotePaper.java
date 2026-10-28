@@ -19,28 +19,29 @@ final class NotePaper {
     private static final int W = 440;
     private static final int PAD = 24;
     private static final int LINE = 19;
+    /** The roster is a list of names, each ringed in red, so its lines sit further apart. */
+    private static final int ROSTER_LINE = 26;
     /** Empty band under the text where the heavy stains go, so they never cover a word. */
     private static final int STAIN_BAND = 40;
     private static final Font FONT = pickFont(Font.PLAIN, 14);
-    private static final Font FONT_BOLD = pickFont(Font.BOLD, 14);
 
     /** What happened to this piece of paper. */
     private record Wear(boolean coal, boolean oil, boolean water, boolean ring, boolean blood, boolean creases,
-                        boolean tornTop, boolean chalkOnRock) {
+                        boolean tornTop, boolean chalkOnRock, boolean roster) {
     }
 
     private static Wear wearFor(int note) {
         return switch (note) {
-            case 1 -> new Wear(true, false, false, false, false, true, false, false);  // foreman's notebook
-            case 2 -> new Wear(false, false, false, true, false, true, true, false);   // torn calendar page
-            case 3 -> new Wear(true, true, false, false, false, false, false, false);  // maintenance log
-            case 4 -> new Wear(true, true, false, false, true, true, false, false);    // oily scrap
-            case 5 -> new Wear(false, false, false, true, false, true, false, false);  // unsent letter
-            case 6 -> new Wear(false, false, true, false, false, true, false, false);  // flood report
-            case 7 -> new Wear(false, false, false, false, false, false, false, true); // chalk on the wall
-            case 8 -> new Wear(true, false, false, false, true, false, false, false);  // tape label
-            case 9 -> new Wear(false, false, true, false, true, true, false, false);   // roster
-            default -> new Wear(true, false, false, false, true, true, true, false);   // your own handwriting
+            case 1 -> new Wear(true, false, false, false, false, true, false, false, false);  // foreman's notebook
+            case 2 -> new Wear(false, false, false, true, false, true, true, false, false);   // torn calendar page
+            case 3 -> new Wear(true, true, false, false, false, false, false, false, false);  // maintenance log
+            case 4 -> new Wear(true, true, false, false, true, true, false, false, false);    // oily scrap
+            case 5 -> new Wear(false, false, false, true, false, true, false, false, false);  // unsent letter
+            case 6 -> new Wear(false, false, true, false, false, true, false, false, false);  // flood report
+            case 7 -> new Wear(false, false, false, false, false, false, false, true, false); // chalk on the wall
+            case 8 -> new Wear(true, false, false, false, true, false, false, false, false);  // tape label
+            case 9 -> new Wear(false, false, true, false, true, true, false, false, true);   // day-crew roster
+            default -> new Wear(true, false, false, false, true, true, true, false, false);   // your own handwriting
         };
     }
 
@@ -62,15 +63,13 @@ final class NotePaper {
         p.setColor(new Color(0, 0, 0, 175));
         p.fillRect(0, 0, Window.WIDTH, Window.HEIGHT);
 
-        // the first line ("Sổ tay tổ trưởng...:") says what the thing is; it is set apart in bold
-        String[] parts = text.split("\n", 2);
-        String heading = parts.length > 1 ? parts[0] : null;
-        String bodyText = parts.length > 1 ? parts[1] : parts[0];
-        List<String> lines = wrap(p, bodyText, W - PAD * 2);
-        int textH = lines.size() * LINE + (heading != null ? LINE + 6 : 0);
+        // a note is only what is written on it: no title, no description of the object
+        List<String> lines = wrap(p, text, W - PAD * 2);
+        int lineH = wear.roster ? ROSTER_LINE : LINE;
+        int textH = lines.size() * lineH;
         int h = Math.max(130, textH + PAD * 2 + 4 + STAIN_BAND);
         int x = (Window.WIDTH - W) / 2, top = Math.max(16, (Window.HEIGHT - h) / 2 - 10);
-        int band = top + PAD + 10 + textH - LINE + 12; // first free y below the text
+        int band = top + PAD + 10 + textH - lineH + 12; // first free y below the text
 
         Shape sheet = sheet(x, top, W, h, wear, rng);
         if (wear.chalkOnRock) drawRock(p, sheet, x, top, W, h, rng);
@@ -79,20 +78,17 @@ final class NotePaper {
         // text
         Color ink = wear.chalkOnRock ? new Color(226, 222, 212) : new Color(38, 30, 26);
         int y = top + PAD + 10;
-        if (heading != null) {
-            p.setFont(FONT_BOLD);
-            p.setColor(wear.chalkOnRock ? new Color(200, 196, 186) : new Color(90, 70, 56));
-            p.drawString(heading, x + PAD, y);
-            y += LINE + 6;
-        }
         p.setFont(FONT);
+        FontMetrics lm = p.getFontMetrics();
         for (String line : lines) {
             if (wear.chalkOnRock) chalkLine(p, line, x + PAD, y, rng);
             else {
                 p.setColor(ink);
                 p.drawString(line, x + PAD, y);
             }
-            y += LINE;
+            // the roster: every name ringed in red ink, and a ring waiting on the empty last line
+            if (wear.roster) redRing(p, x + PAD, y, line.isEmpty() ? 110 : lm.stringWidth(line), rng);
+            y += lineH;
         }
 
         // a few specks of grime over the ink, light enough not to hide a letter
@@ -240,6 +236,17 @@ final class NotePaper {
         for (int i = 0; i < len / 6; i++) p.fillRect(x + rng.range(0, Math.max(1, len)), y - rng.range(0, 11), rng.range(1, 3), 1);
     }
 
+    /** A hasty loop of red ink around a line of text. */
+    private static void redRing(Graphics2D p, int x, int baseline, int width, Rng rng) {
+        p.setColor(new Color(170, 22, 20, 190));
+        p.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        double tilt = rng.range(-2.0, 2.0);
+        p.draw(new Ellipse2D.Double(x - 9, baseline - 17 + tilt, width + 18, 23));
+        // the pen overshoots where the loop closes
+        p.drawLine(x + width + 6, baseline - 15, x + width + 14, baseline - 20);
+        p.setStroke(new BasicStroke(1f));
+    }
+
     private static void blob(Graphics2D p, int cx, int cy, int r, Color c, int alpha, Rng rng) {
         p.setPaint(new RadialGradientPaint(cx, cy, r, new float[]{0f, 1f},
                 new Color[]{new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha), new Color(c.getRed(), c.getGreen(), c.getBlue(), 0)}));
@@ -278,7 +285,7 @@ final class NotePaper {
     private static List<String> wrap(Graphics2D g, String text, int maxWidth) {
         FontMetrics fm = g.getFontMetrics(FONT);
         List<String> out = new ArrayList<>();
-        for (String para : text.split("\n")) {
+        for (String para : text.split("\n", -1)) {
             StringBuilder cur = new StringBuilder();
             for (String word : para.split(" ")) {
                 String test = cur.isEmpty() ? word : cur + " " + word;

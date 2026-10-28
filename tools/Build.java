@@ -38,6 +38,8 @@ public class Build {
     static final Path TOOL_CLASSES = ROOT.resolve("build/tool-classes");
     static final Path DIST = ROOT.resolve("dist");
     static final String MAIN = "hollowshift.Main";
+    /** Version stamped on the packaged app; bump it for each release. */
+    static final String VERSION = "1.0.1";
     /** Build-time only decoders for convert-audio (OGG, MP3); never packaged into the game. */
     static final Path JORBIS = ROOT.resolve("tools/lib/jorbis-0.0.17.4.jar");
     static final Path JLAYER = ROOT.resolve("tools/lib/jlayer-1.0.1.jar");
@@ -171,7 +173,7 @@ public class Build {
         int rc = jpackage.run(System.out, System.err,
                 "--type", "app-image",
                 "--name", "HollowShift",
-                "--app-version", "1.0.0",
+                "--app-version", VERSION,
                 "--vendor", "windfox1243",
                 "--description", "HOLLOW SHIFT",
                 "--input", input.toString(),
