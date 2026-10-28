@@ -27,6 +27,7 @@ public final class GameScene extends Scene {
     private final Hud hud = new Hud();
     private final FearOverlay fearOverlay = new FearOverlay();
     private final Jumpscare jumpscare = new Jumpscare();
+    private final NotePaper notePaper = new NotePaper();
     private final MenuList pauseMenu;
     private boolean paused;
     private double deathTimer;
@@ -102,32 +103,6 @@ public final class GameScene extends Scene {
         }
     }
 
-    /** An old, stained sheet of paper in the middle of the screen. */
-    private void renderNote(Graphics2D g, String text) {
-        g.setColor(new Color(0, 0, 0, 170));
-        g.fillRect(0, 0, Window.WIDTH, Window.HEIGHT);
-        int w = 380, x = (Window.WIDTH - w) / 2, top = 70;
-        java.util.List<String> lines = Text.wrap(g, text, w - 40, 10);
-        int h = Math.max(120, lines.size() * 15 + 50);
-        g.setColor(new Color(196, 184, 156));
-        g.fillRect(x, top, w, h);
-        g.setColor(new Color(160, 146, 116));
-        g.drawRect(x, top, w - 1, h - 1);
-        // water stains and a torn corner
-        g.setColor(new Color(170, 154, 120, 120));
-        g.fillOval(x + w - 90, top + h - 60, 70, 40);
-        g.fillOval(x + 20, top + 10, 40, 22);
-        g.setColor(new Color(0, 0, 0, 170));
-        g.fillPolygon(new int[]{x + w - 18, x + w, x + w}, new int[]{top, top, top + 18}, 3);
-        int y = top + 28;
-        for (String line : lines) {
-            Text.draw(g, line, x + 20, y, 10, new Color(52, 40, 34), Text.LEFT);
-            y += 15;
-        }
-        String key = hollowshift.engine.Input.keyName(game.input.binding(Action.INTERACT)[0]);
-        Text.draw(g, Lang.t("note.close", key), Window.WIDTH / 2, top + h + 18, 9, new Color(200, 190, 170), Text.CENTER);
-    }
-
     /** Caught by the Tenant with jumpscares enabled. */
     private boolean scared() {
         return world.death() == DeathCause.TENANT && game.save.jumpscare;
@@ -163,7 +138,10 @@ public final class GameScene extends Scene {
         } else if (world.death() == null) {
             fearOverlay.render(g, world);
             hud.render(g, world);
-            if (world.reading() != null) renderNote(g, world.reading());
+            if (world.reading() != null) {
+                String key = hollowshift.engine.Input.keyName(game.input.binding(Action.INTERACT)[0]);
+                notePaper.render(g, world.readingNumber(), world.reading(), Lang.t("note.close", key));
+            }
         }
         if (scared()) {
             jumpscare.render(g, deathTimer);

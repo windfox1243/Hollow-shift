@@ -31,7 +31,7 @@ public final class Note extends Fixture implements Interactable {
     public void interact(Player p) {
         read = true;
         world.audio.play("grab", hollowshift.engine.audio.Bus.SFX, 0.7, 1.3);
-        world.readNote(Lang.t("note." + number));
+        world.readNote(number, Lang.t("note." + number));
         if (world.settings().notesRead.add(number)) world.settings().save();
     }
 

@@ -51,6 +51,7 @@ public final class World {
     private DeathCause death;
     private String toast;
     private String reading;
+    private int readingNumber;
     private double toastTimer;
     private Voice ambience;
     private Voice chase;
@@ -142,8 +143,14 @@ public final class World {
     }
 
     /** Opens a note on screen; the shift is paused until it is put away. */
-    public void readNote(String text) {
+    public void readNote(int number, String text) {
         reading = text;
+        readingNumber = number;
+    }
+
+    /** Which story note (1..10) is open, for its look. */
+    public int readingNumber() {
+        return readingNumber;
     }
 
     public String reading() {
