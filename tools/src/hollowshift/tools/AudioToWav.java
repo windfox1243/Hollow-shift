@@ -38,6 +38,12 @@ public class AudioToWav {
             String[] kv = line.split("=", 2);
             String name = kv[0].strip();
             Path src = root.resolve(kv[1].strip());
+            if (!Files.exists(src)) {
+                // e.g. the owner-provided MP3s are kept out of the public repository;
+                // the converted WAV already in resources is used as is
+                System.out.printf("  %-12s skipped, source not present: %s%n", name, src);
+                continue;
+            }
             try (InputStream in = new java.io.BufferedInputStream(Files.newInputStream(src))) {
                 Decoded d = src.toString().toLowerCase().endsWith(".mp3") ? decodeMp3(in) : decode(in);
                 byte[] mono = toMono16(d);

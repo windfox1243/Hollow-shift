@@ -19,7 +19,7 @@ Kenney packs were downloaded from Kenney's account on OpenGameArt (kenney.nl its
 | Interface Sounds 1.0 | Kenney | https://opengameart.org/content/interface-sounds | CC0 | menu move/select/back, typewriter | OGG sources in `third_party/kenney_interface_sounds/` |
 
 ## Sounds provided by the project owner
-Downloaded by the project owner from Pixabay and used under the Pixabay Content License (free use, no attribution required; not redistributed on their own). Converted to WAV with `convert-audio`.
+Downloaded by the project owner from Pixabay and used under the Pixabay Content License (free use, no attribution required; not redistributed on their own). Only the converted WAVs inside the game are in this repository; the original MP3s are kept locally and ignored by git (`convert-audio` skips them when missing).
 
 | File | Author (Pixabay) | Used for |
 |---|---|---|

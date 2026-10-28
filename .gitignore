@@ -8,3 +8,7 @@ dist/
 *.iml
 .DS_Store
 Thumbs.db
+
+# owner-provided recordings (Pixabay licence: not redistributed on their own);
+# the converted WAVs in src/main/resources/assets/sfx are part of the game
+third_party/user_audio/*.mp3
