@@ -11,12 +11,9 @@ Bạn là thợ mỏ ca đêm ở Hầm 9. Tổ ca ngày xuống hầm từ sán
 Đầu mỗi ca, game công bố **luật chơi**: nó cảm nhận bạn bằng cách nào (nhìn, nghe, ngửi, cảm nhận rung chấn, đi theo tiếng vọng…), và ngoài nó ra còn thứ gì có thể giết bạn (giá lạnh, cái đói, đèn hết pin).
 
 ## Có gì trong game
-- **5 ca cốt truyện**. Cốt truyện hé lộ dần qua lời dẫn mỗi ca và 10 mẩu giấy rải trong hầm. Game có **hai kết thúc**, một trong số đó là kết thúc ẩn.
-- **Chế độ vô tận**: nhập mã để sinh màn. Ca sau rộng hơn, quái nhanh hơn và có nhiều luật hơn. Cùng một mã thì luôn ra cùng một chuỗi màn.
-- **Bản đồ sinh ngẫu nhiên** từ các mẫu phòng tự thiết kế. Ca cuối dùng bản đồ vẽ tay.
-- **Quái vật**: một khối thịt có xúc tu, bò xuyên qua vách đá. Nó chỉ cảm nhận được bạn bằng những giác quan mà luật của ca đó cho phép.
-- Bóng tối gần như tuyệt đối, có hiệu ứng tim đập khi quái ở gần, nhạc rượt đuổi và cảnh hù.
-- Hỗ trợ **tiếng Việt và tiếng Anh**, đổi trong Cài đặt → Ngôn ngữ.
+- Cốt truyện hé lộ dần qua lời dẫn mỗi ca và 10 mẩu giấy rải trong hầm. Game có **hai kết thúc**, một trong số đó là kết thúc ẩn.
+- **Chế độ vô tận**: Tạo bởi seed :v
+- Hỗ trợ **tiếng Việt và tiếng Anh**.
 
 ## Yêu cầu
 - JDK 21 trở lên (đã thử trên JDK 27).
