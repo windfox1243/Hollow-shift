@@ -28,7 +28,12 @@ java tools/Build.java run             # biên dịch và chơi ngay
 java tools/Build.java test            # chạy bộ test
 java tools/Build.java jar             # đóng gói ra dist/hollow-shift.jar
 java -jar dist/hollow-shift.jar       # chơi bản đã đóng gói (hoặc nhấp đúp vào file .jar)
+java tools/Build.java package         # bản Windows kèm Java: dist/HollowShift-windows.zip
 ```
+
+Muốn chơi mà không phải build, tải file ở mục **Releases** của repo:
+- `HollowShift-windows.zip`: không cần cài Java, giải nén rồi chạy `HollowShift.exe`;
+- `hollow-shift.jar`: cần Java 21 trở lên.
 
 Lệnh dành cho người phát triển:
 ```

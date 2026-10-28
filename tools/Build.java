@@ -19,6 +19,8 @@ import java.util.stream.Stream;
  *   java tools/Build.java run        compile and start the game
  *   java tools/Build.java test       compile and run the test suite
  *   java tools/Build.java jar        compile and package dist/hollow-shift.jar
+ *   java tools/Build.java package    jar + a Windows app with its own trimmed Java runtime,
+ *                                    zipped to dist/HollowShift-windows.zip (no Java needed to play)
  *   java tools/Build.java inspect [path/to/www] [out.md]
  *                                    run the Construct 3 export inspector (research tool)
  *   java tools/Build.java convert-audio
@@ -56,6 +58,11 @@ public class Build {
             case "jar" -> {
                 compileMain();
                 jar();
+            }
+            case "package" -> {
+                compileMain();
+                jar();
+                packageApp();
             }
             case "inspect" -> {
                 compileTools();
@@ -146,6 +153,46 @@ public class Build {
             }
         }
         System.out.println("wrote " + ROOT.relativize(out) + " (" + Files.size(out) / 1024 + " KB)");
+    }
+
+    /**
+     * Builds a self-contained app with jpackage: HollowShift.exe plus a jlink'ed runtime
+     * holding only the modules the game uses (java.base, java.desktop), then zips it.
+     */
+    static void packageApp() throws Exception {
+        Path input = ROOT.resolve("build/package-input");
+        Path out = ROOT.resolve("build/package");
+        delete(input);
+        delete(out);
+        Files.createDirectories(input);
+        Files.copy(DIST.resolve("hollow-shift.jar"), input.resolve("hollow-shift.jar"));
+        java.util.spi.ToolProvider jpackage = java.util.spi.ToolProvider.findFirst("jpackage")
+                .orElseThrow(() -> new IllegalStateException("jpackage not found: run this with a full JDK"));
+        int rc = jpackage.run(System.out, System.err,
+                "--type", "app-image",
+                "--name", "HollowShift",
+                "--app-version", "1.0.0",
+                "--vendor", "windfox1243",
+                "--description", "HOLLOW SHIFT",
+                "--input", input.toString(),
+                "--main-jar", "hollow-shift.jar",
+                "--main-class", MAIN,
+                "--add-modules", "java.base,java.desktop",
+                "--jlink-options", "--strip-debug --no-header-files --no-man-pages --compress=zip-6",
+                "--dest", out.toString());
+        if (rc != 0) throw new IllegalStateException("jpackage failed: " + rc);
+        Path zip = DIST.resolve("HollowShift-windows.zip");
+        Files.deleteIfExists(zip);
+        Path app = out.resolve("HollowShift");
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(zip));
+             Stream<Path> s = Files.walk(app)) {
+            for (Path p : (Iterable<Path>) s.filter(Files::isRegularFile)::iterator) {
+                zos.putNextEntry(new java.util.zip.ZipEntry("HollowShift/" + app.relativize(p).toString().replace('\\', '/')));
+                Files.copy(p, zos);
+                zos.closeEntry();
+            }
+        }
+        System.out.println("wrote " + ROOT.relativize(zip) + " (" + Files.size(zip) / (1024 * 1024) + " MB)");
     }
 
     static void delete(Path dir) throws IOException {
