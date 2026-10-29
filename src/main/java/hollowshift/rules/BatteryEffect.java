@@ -6,14 +6,23 @@ import hollowshift.game.World;
 
 import java.awt.Color;
 
-/** BATTERY: the lantern drains a full charge in about 80 seconds of use. */
+/**
+ * The lantern always runs on a battery: a full charge lasts about three and a half minutes
+ * of light, or 80 seconds under the BATTERY rule. Spare cells are kept in a pocket.
+ */
 public final class BatteryEffect implements StatusEffect {
-    private static final double DRAIN_SECONDS = 80;
+    public static final double DRAIN_SECONDS = 210;
+    public static final double DRAIN_SECONDS_RULE = 80;
+    private final double drainSeconds;
+
+    public BatteryEffect(double drainSeconds) {
+        this.drainSeconds = drainSeconds;
+    }
 
     @Override
     public void update(Player p, World world, double dt) {
         if (!p.lanternOn()) return;
-        p.battery = Math.max(0, p.battery - dt / DRAIN_SECONDS);
+        p.battery = Math.max(0, p.battery - dt / drainSeconds);
         if (p.battery <= 0) {
             p.forceLanternOff();
             world.toast(Lang.t("toast.lanternDied"));

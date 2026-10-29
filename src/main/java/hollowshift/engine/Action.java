@@ -12,6 +12,9 @@ public enum Action {
     INTERACT(KeyEvent.VK_E, KeyEvent.VK_SPACE),
     THROW(KeyEvent.VK_Q, 0),
     LANTERN(KeyEvent.VK_F, 0),
+    DROP(KeyEvent.VK_G, 0),
+    NEXT_ITEM(KeyEvent.VK_TAB, KeyEvent.VK_R),
+    JOURNAL(KeyEvent.VK_J, 0),
     CONFIRM(KeyEvent.VK_ENTER, KeyEvent.VK_SPACE),
     BACK(KeyEvent.VK_ESCAPE, KeyEvent.VK_BACK_SPACE);
 

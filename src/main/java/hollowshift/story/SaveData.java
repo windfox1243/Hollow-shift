@@ -15,6 +15,8 @@ import java.util.Map;
 /** Settings and progress, stored as JSON in the user's home directory. */
 public final class SaveData {
     private static final Path FILE = Path.of(System.getProperty("user.home"), ".hollowshift", "save.json");
+    /** Only a save read through {@link #load()} is written back. */
+    private boolean persistent;
 
     public int shiftsUnlocked = 1;
     public boolean storyFinished;
@@ -53,10 +55,12 @@ public final class SaveData {
         } catch (Exception e) {
             System.err.println("save file unreadable, using defaults: " + e.getMessage());
         }
+        s.persistent = true;
         return s;
     }
 
     public void save() {
+        if (!persistent) return; // a fresh SaveData (tests, tools) never touches the player's file
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("shiftsUnlocked", shiftsUnlocked);
         m.put("storyFinished", storyFinished);

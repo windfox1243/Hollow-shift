@@ -21,4 +21,11 @@ public abstract class Scene {
     public abstract void update(double dt);
 
     public abstract void render(Graphics2D g);
+
+    /**
+     * Drawn after the pixel buffer is scaled to the window, at the window's full resolution.
+     * Coordinates are still the 640x360 logical ones. Used for text that must stay sharp.
+     */
+    public void renderOverlay(Graphics2D g) {
+    }
 }

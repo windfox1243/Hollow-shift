@@ -50,6 +50,16 @@ public final class SceneManager {
 
     public void render(Graphics2D g) {
         if (current != null) current.render(g);
+        fade(g);
+    }
+
+    /** The full-resolution layer; the fade covers it too. */
+    public void renderOverlay(Graphics2D g) {
+        if (current != null) current.renderOverlay(g);
+        fade(g);
+    }
+
+    private void fade(Graphics2D g) {
         if (fade > 0) {
             g.setColor(new Color(0, 0, 0, (int) (255 * Math.min(1, fade))));
             g.fillRect(0, 0, Window.WIDTH, Window.HEIGHT);

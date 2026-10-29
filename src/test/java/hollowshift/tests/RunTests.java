@@ -7,7 +7,7 @@ import hollowshift.engine.audio.Audio;
 import hollowshift.engine.gfx.Art;
 import hollowshift.engine.io.Json;
 import hollowshift.engine.io.Resources;
-import hollowshift.entity.Creature;
+import hollowshift.entity.*;
 import hollowshift.entity.Player;
 import hollowshift.game.*;
 import hollowshift.rules.*;
@@ -46,6 +46,9 @@ public final class RunTests {
         test("up close the Tenant grabs with its hands", RunTests::grab);
         test("SMELL: a player who runs can shake off the Tenant", RunTests::outrunSmell);
         test("hidden ending: the crack opens only with all notes read", RunTests::hiddenEnding);
+        test("pockets: items are stashed, capped and used from the pack", RunTests::pockets);
+        test("a note picked up is kept in the journal", RunTests::notesKept);
+        test("the lantern drains in every shift, faster under BATTERY", RunTests::lanternDrains);
         test("every shift runs 90 simulated seconds with a random bot", RunTests::simulation);
         System.out.printf("%n%d passed, %d failed%n", passed, failed);
         System.exit(failed == 0 ? 0 : 1);
@@ -389,6 +392,67 @@ public final class RunTests {
                 check(w.objectives().complete() && w.objectives().stayed(), "staying below should end the shift");
             }
         }
+    }
+
+    private static void press(Services sv, World w, int key) {
+        sv.input().simulate(key, true);
+        sv.input().poll();
+        tick(w, 1);
+        sv.input().simulate(key, false);
+        sv.input().poll();
+        tick(w, 1);
+    }
+
+    private static void pockets() {
+        Services sv = services();
+        World w = room(sv, 600);
+        Player p = w.player;
+        for (int i = 0; i < 4; i++) {
+            Stone st = w.add(new Stone(p.x, p.y));
+            tick(w, 1);
+            if (st.canInteract(p)) st.interact(p);
+        }
+        check(p.pack().count(Supply.STONE) == Supply.STONE.max, "stones should stop at the pocket limit, got " + p.pack().count(Supply.STONE));
+        check(w.entitiesOf(Stone.class).size() == 1, "the stone that did not fit should stay on the floor");
+        check(!p.isHolding(), "stones go in a pocket, not the hands");
+
+        press(sv, w, KeyEvent.VK_Q);
+        check(p.pack().count(Supply.STONE) == Supply.STONE.max - 1, "Q should throw a stone");
+        check(w.entitiesOf(Stone.class).stream().anyMatch(Stone::isFlying), "thrown stone should be in the air");
+
+        BatteryCell cell = w.add(new BatteryCell(p.x, p.y));
+        tick(w, 1);
+        cell.interact(p);
+        check(p.pack().selected() == Supply.BATTERY, "a new item is selected when picked up");
+        press(sv, w, KeyEvent.VK_Q);
+        check(p.pack().count(Supply.BATTERY) == 1, "a full lantern should not use up a cell");
+        p.battery = 0.2;
+        press(sv, w, KeyEvent.VK_Q);
+        check(p.pack().count(Supply.BATTERY) == 0 && p.battery > 0.75, "a cell should recharge the lantern");
+
+        press(sv, w, KeyEvent.VK_1);
+        check(p.pack().selected() == Supply.STONE, "key 1 selects the stone pocket");
+    }
+
+    private static void notesKept() {
+        Services sv = services();
+        World w = room(sv, 600);
+        Note n = w.add(new Note(w.player.x, w.player.y, 3));
+        tick(w, 1);
+        n.interact(w.player);
+        check(w.reading() != null && w.readingNumber() == 3, "the note should be on screen");
+        check(sv.save().notesRead.contains(3), "the note should be in the journal");
+        tick(w, 1);
+        check(w.entitiesOf(Note.class).isEmpty(), "the note should be taken off the floor");
+    }
+
+    private static void lanternDrains() {
+        World plain = room(services(), 600);
+        World rule = room(services(), 600, Rule.BATTERY);
+        tick(plain, 60 * 40);
+        tick(rule, 60 * 40);
+        check(plain.player.battery < 0.9 && plain.player.battery > 0.7, "40 s of light should cost a little charge, left " + plain.player.battery);
+        check(rule.player.battery < plain.player.battery - 0.2, "BATTERY should drain much faster, left " + rule.player.battery);
     }
 
     // ---- full shifts with a random bot --------------------------------------------------------------

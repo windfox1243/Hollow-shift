@@ -69,8 +69,10 @@ public final class WorldBuilder {
         }
         place(world, spots, 3 + shift.number(), Stone::new);
         place(world, spots, 1 + shift.number() / 2, Flare::new);
-        if (shift.rules().has(Rule.BATTERY)) place(world, spots, 2 + shift.number() / 2, BatteryCell::new);
-        if (shift.rules().has(Rule.HUNGER)) place(world, spots, 3 + shift.number() / 2, FoodCan::new);
+        // the lantern drains in every shift, so spare cells are always worth finding;
+        // food is a second wind when running, and life itself under HUNGER
+        place(world, spots, (shift.rules().has(Rule.BATTERY) ? 2 : 1) + shift.number() / 2, BatteryCell::new);
+        place(world, spots, (shift.rules().has(Rule.HUNGER) ? 3 : 1) + shift.number() / 3, FoodCan::new);
 
         boolean cold = shift.rules().has(Rule.COLD);
         for (Marker m : byType.getOrDefault('h', List.of())) {
@@ -203,11 +205,14 @@ public final class WorldBuilder {
         FinaleObjectives obj = new FinaleObjectives((int) markers.stream().filter(m -> m.type() == 'L').count());
         World world = new World(services, shift, map, obj, seed);
         Rng rng = new Rng(seed + 7);
-        int noteIndex = 0;
+        int noteIndex = 0, supplies = 0;
         for (Marker m : markers) {
             if (m.type() == 'i' && noteIndex < 2) {
                 // the last two notes of the story wait in the final map
                 world.add(new Note(m.x(), m.y(), shift.number() * 2 - 1 + noteIndex++));
+            } else if (m.type() == 'i' && supplies < 3) {
+                // two spare cells and a can for the long walk through the lever halls
+                world.add(supplies++ < 2 ? new BatteryCell(m.x(), m.y()) : new FoodCan(m.x(), m.y()));
             }
             switch (m.type()) {
                 case 'P' -> world.add(new Player(m.x(), m.y()));

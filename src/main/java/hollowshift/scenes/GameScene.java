@@ -29,6 +29,7 @@ public final class GameScene extends Scene {
     private final Jumpscare jumpscare = new Jumpscare();
     private final NotePaper notePaper = new NotePaper();
     private final MenuList pauseMenu;
+    private Journal journal;
     private boolean paused;
     private double deathTimer;
     private double endTimer;
@@ -39,6 +40,14 @@ public final class GameScene extends Scene {
         this.world = WorldBuilder.build(new Services(game.audio, game.art, game.input, game.save), run.def(game.campaign), run.levelSeed());
         pauseMenu = new MenuList(game)
                 .add(Lang.t("pause.resume"), () -> paused = false)
+                .add(Lang.t("pause.journal"), () -> {
+                    paused = false;
+                    openJournal();
+                })
+                .add(Lang.t("pause.journal"), () -> {
+                    paused = false;
+                    openJournal();
+                })
                 .add(Lang.t("pause.restart"), () -> {
                     run.newAttempt();
                     game.scenes.set(new GameScene(game, run));
@@ -83,6 +92,13 @@ public final class GameScene extends Scene {
             }
             return;
         }
+        if (journal != null) {
+            if (!journal.update(game.input)) {
+                journal = null;
+                game.audio.play("grab", Bus.SFX, 0.5, 1.1);
+            }
+            return;
+        }
         if (game.input.pressed(Action.BACK)) {
             paused = true;
             pauseMenu.select(0);
@@ -90,10 +106,14 @@ public final class GameScene extends Scene {
             return;
         }
         if (world.reading() != null) {
-            if (game.input.pressed(Action.INTERACT) || game.input.pressed(Action.CONFIRM)) {
+            if (game.input.pressed(Action.INTERACT) || game.input.pressed(Action.CONFIRM) || game.input.pressed(Action.JOURNAL)) {
                 world.closeNote();
                 game.audio.play("grab", Bus.SFX, 0.5, 1.1);
             }
+            return;
+        }
+        if (game.input.pressed(Action.JOURNAL)) {
+            openJournal();
             return;
         }
         world.update(dt);
@@ -101,6 +121,16 @@ public final class GameScene extends Scene {
             endTimer += dt;
             if (endTimer > 0.3) finishShift();
         }
+    }
+
+    private void openJournal() {
+        Journal j = new Journal(game.save.notesRead, notePaper);
+        if (j.empty()) {
+            world.toast(Lang.t("toast.journalEmpty"));
+            return;
+        }
+        journal = j;
+        game.audio.play("grab", Bus.SFX, 0.6, 1.3);
     }
 
     /** Caught by the Tenant with jumpscares enabled. */
@@ -138,10 +168,6 @@ public final class GameScene extends Scene {
         } else if (world.death() == null) {
             fearOverlay.render(g, world);
             hud.render(g, world);
-            if (world.reading() != null) {
-                String key = hollowshift.engine.Input.keyName(game.input.binding(Action.INTERACT)[0]);
-                notePaper.render(g, world.readingNumber(), world.reading(), Lang.t("note.close", key));
-            }
         }
         if (scared()) {
             jumpscare.render(g, deathTimer);
@@ -162,6 +188,18 @@ public final class GameScene extends Scene {
                 Text.draw(g, r.title(), Window.WIDTH / 2, y, 9, new Color(170, 160, 150), Text.CENTER);
                 y += 12;
             }
+        }
+    }
+
+    /** Notes are drawn at the window's full resolution so the handwriting stays sharp. */
+    @Override
+    public void renderOverlay(Graphics2D g) {
+        if (world.death() != null || paused) return;
+        if (journal != null) {
+            journal.render(g, game.input);
+        } else if (world.reading() != null) {
+            String key = hollowshift.engine.Input.keyName(game.input.binding(Action.INTERACT)[0]);
+            notePaper.render(g, world.readingNumber(), world.reading(), Lang.t("note.close", key));
         }
     }
 }

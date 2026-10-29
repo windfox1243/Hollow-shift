@@ -1,13 +1,12 @@
 package hollowshift.entity;
 
-import hollowshift.engine.Lang;
 import java.awt.Color;
 
 /**
  * A road flare. Throwing it lights it: it burns for a while as a bright light
  * that warms and reveals, and under the SIGHT rule it lures the Tenant.
  */
-public final class Flare extends Carryable implements LightSource {
+public final class Flare extends Carryable implements LightSource, Stashable {
     private static final double BURN_TIME = 30;
     private boolean lit;
     private double burn;
@@ -27,13 +26,31 @@ public final class Flare extends Carryable implements LightSource {
     }
 
     @Override
+    public Supply supply() {
+        return Supply.FLARE;
+    }
+
+    /** Lit flares are too hot to pocket; spent ones are just sticks. */
+    @Override
     public String prompt(Player p) {
-        return isLit() ? Lang.t("prompt.flareLit") : burn < 0 ? null : Lang.t("prompt.pickup", displayName());
+        return lit || isFlying() ? null : Stashable.prompt(p, Supply.FLARE);
     }
 
     @Override
     public boolean canInteract(Player p) {
-        return burn >= 0 && super.canInteract(p);
+        return !lit && !isFlying() && p.pack().hasRoom(Supply.FLARE);
+    }
+
+    @Override
+    public void interact(Player p) {
+        p.stash(this);
+    }
+
+    /** Lights it where it lies. */
+    public void ignite() {
+        lit = true;
+        burn = BURN_TIME;
+        world.audio.playAt("flare", x, y, 400, 0.8, 1);
     }
 
     @Override

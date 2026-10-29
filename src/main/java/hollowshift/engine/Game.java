@@ -57,7 +57,7 @@ public final class Game {
                 Graphics2D g = window.beginFrame();
                 scenes.render(g);
                 g.dispose();
-                window.present();
+                window.present(scenes::renderOverlay);
             } else {
                 try {
                     Thread.sleep(1);

@@ -2,7 +2,7 @@ package hollowshift.entity;
 
 import hollowshift.engine.Lang;
 
-/** A scrap of paper left behind by someone who was here before. Reading it pauses the shift. */
+/** A scrap of paper left behind by someone who was here before. Picking it up reads it and keeps it in the journal. */
 public final class Note extends Fixture implements Interactable {
     private final int number;
     private boolean read;
@@ -31,8 +31,9 @@ public final class Note extends Fixture implements Interactable {
     public void interact(Player p) {
         read = true;
         world.audio.play("grab", hollowshift.engine.audio.Bus.SFX, 0.7, 1.3);
-        world.readNote(number, Lang.t("note." + number));
         if (world.settings().notesRead.add(number)) world.settings().save();
+        world.readNote(number, Lang.t("note." + number));
+        remove();
     }
 
     @Override

@@ -3,6 +3,7 @@ package hollowshift.game;
 import hollowshift.ai.Noise;
 import hollowshift.ai.NoiseBus;
 import hollowshift.engine.Camera;
+import hollowshift.engine.Lang;
 import hollowshift.engine.Input;
 import hollowshift.engine.MathUtil;
 import hollowshift.engine.Rng;
@@ -73,7 +74,7 @@ public final class World {
         this.art = services.art();
         this.objectives = objectives;
         objectives.attach(this);
-        if (rules.has(Rule.BATTERY)) effects.add(new BatteryEffect());
+        effects.add(new BatteryEffect(rules.has(Rule.BATTERY) ? BatteryEffect.DRAIN_SECONDS_RULE : BatteryEffect.DRAIN_SECONDS));
         if (rules.has(Rule.COLD)) effects.add(new ColdEffect());
         if (rules.has(Rule.HUNGER)) effects.add(new HungerEffect());
     }
@@ -157,8 +158,10 @@ public final class World {
         return reading;
     }
 
+    /** Puts the note away; it is kept in the journal from now on. */
     public void closeNote() {
         reading = null;
+        toast(Lang.t("toast.noteKept", hollowshift.engine.Input.keyName(input().binding(hollowshift.engine.Action.JOURNAL)[0])));
     }
 
     public String toast() {

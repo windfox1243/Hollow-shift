@@ -5,7 +5,6 @@ import hollowshift.ai.Noise;
 import hollowshift.engine.Action;
 import hollowshift.engine.Input;
 import hollowshift.engine.MathUtil;
-import hollowshift.rules.Rule;
 import hollowshift.world.Tile;
 
 import java.awt.Color;
@@ -13,7 +12,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 
-/** The miner. Moves, runs, carries one item and works the lantern. */
+/** The miner. Moves, runs, carries a fuse in both hands, keeps small things in a {@link Pack} and works the lantern. */
 public final class Player extends Entity implements LightSource {
     // walking just outpaces the Tenant's opening chase (75 px/s); a long chase speeds it up
     // past walking pace, so you have to run (as in the original, where the player is faster)
@@ -23,6 +22,9 @@ public final class Player extends Entity implements LightSource {
     public static final double STEP_NOISE_WALK = 130;
     public static final double STEP_NOISE_RUN = 230;
     public static final double PICKUP_NOISE = 375;
+    /** Charge one spare cell puts back, and how long a meal keeps stamina from draining. */
+    private static final double CELL_CHARGE = 0.6;
+    private static final double SECOND_WIND = 6;
 
     // survival stats, 0..1 (used only when the matching rule is active)
     public double battery = 1;
@@ -33,6 +35,8 @@ public final class Player extends Entity implements LightSource {
     public double speedFactor = 1;
 
     private Carryable held;
+    private final Pack pack = new Pack();
+    private double secondWind;
     private boolean lanternOn = true;
     private boolean running;
     private boolean moving;
@@ -76,7 +80,10 @@ public final class Player extends Entity implements LightSource {
 
         boolean wantRun = in.held(Action.RUN) && moving && !exhausted;
         running = wantRun;
-        if (running) {
+        secondWind = Math.max(0, secondWind - dt);
+        if (running && secondWind > 0) {
+            stamina = 1;
+        } else if (running) {
             stamina -= dt / 4.0;
             if (stamina <= 0) {
                 stamina = 0;
@@ -115,7 +122,12 @@ public final class Player extends Entity implements LightSource {
         }
 
         if (in.pressed(Action.LANTERN)) toggleLantern();
-        if (in.pressed(Action.THROW) && held != null) throwOrDrop();
+        if (in.pressed(Action.NEXT_ITEM)) pack.cycle();
+        for (Supply s : Supply.values()) {
+            if (in.keyPressed(java.awt.event.KeyEvent.VK_1 + s.ordinal())) pack.select(s);
+        }
+        if (in.pressed(Action.THROW)) useSelected();
+        if (in.pressed(Action.DROP) && held != null) drop();
         updateInteraction(in, dt);
     }
 
@@ -134,7 +146,7 @@ public final class Player extends Entity implements LightSource {
     }
 
     private void toggleLantern() {
-        if (!lanternOn && world.rules.has(Rule.BATTERY) && battery <= 0) {
+        if (!lanternOn && battery <= 0) {
             world.toast(Lang.t("toast.lanternDead"));
             return;
         }
@@ -142,23 +154,70 @@ public final class Player extends Entity implements LightSource {
         world.audio.play("lantern");
     }
 
-    private void throwOrDrop() {
+    /** Uses whatever is in the selected pocket: throws a stone or flare, swaps the cell, eats. */
+    public void useSelected() {
+        Supply s = pack.selected();
+        if (pack.count(s) == 0) {
+            pack.cycle();
+            s = pack.selected();
+            if (pack.count(s) == 0) {
+                world.toast(Lang.t("toast.pocketsEmpty"));
+                return;
+            }
+        }
+        switch (s) {
+            case STONE, FLARE -> {
+                pack.take(s);
+                Carryable item = s == Supply.STONE ? new Stone(x, y) : new Flare(x, y);
+                world.add(item);
+                world.audio.play("throw", hollowshift.engine.audio.Bus.SFX, 0.7, 1);
+                world.emitNoise(new Noise(x, y, 60, true));
+                item.launch(x + facingX * 6, y + facingY * 6, x + facingX * 130, y + facingY * 130);
+            }
+            case BATTERY -> {
+                if (battery > 0.9) {
+                    world.toast(Lang.t("toast.batteryFull"));
+                    return;
+                }
+                pack.take(s);
+                battery = Math.min(1, battery + CELL_CHARGE);
+                world.audio.play("lantern", hollowshift.engine.audio.Bus.SFX, 1, 0.8);
+                world.toast(Lang.t("toast.recharged"));
+            }
+            case FOOD -> {
+                pack.take(s);
+                food = Math.min(1, food + 0.45);
+                stamina = 1;
+                exhausted = false;
+                secondWind = SECOND_WIND;
+                world.audio.play("eat");
+                world.emitNoise(new Noise(x, y, 120, true));
+                world.toast(Lang.t("toast.ate"));
+            }
+        }
+    }
+
+    private void drop() {
         Carryable item = held;
         held = null;
         item.setHeld(false);
-        if (item.throwable()) {
-            world.audio.play("throw", hollowshift.engine.audio.Bus.SFX, 0.7, 1);
-            world.emitNoise(new Noise(x, y, 60, true));
-            item.launch(x + facingX * 6, y + facingY * 6, x + facingX * 130, y + facingY * 130);
-        } else {
-            item.x = x + facingX * 8;
-            item.y = y + facingY * 8;
-            if (world.map.boxBlocked(item.x - 3, item.y - 2, item.x + 3, item.y + 2)) {
-                item.x = x;
-                item.y = y;
-            }
-            world.audio.play("drop", hollowshift.engine.audio.Bus.SFX, 0.6, 1);
+        item.x = x + facingX * 8;
+        item.y = y + facingY * 8;
+        if (world.map.boxBlocked(item.x - 3, item.y - 2, item.x + 3, item.y + 2)) {
+            item.x = x;
+            item.y = y;
         }
+        world.audio.play("drop", hollowshift.engine.audio.Bus.SFX, 0.6, 1);
+    }
+
+    /** Puts a small item in its pocket. */
+    public <T extends Item & Stashable> void stash(T item) {
+        if (!pack.add(item.supply())) return;
+        pack.select(item.supply());
+        item.remove();
+        world.audio.play("grab", hollowshift.engine.audio.Bus.SFX, 0.8, 1);
+        world.emitNoise(new Noise(x, y, PICKUP_NOISE, true));
+        world.toast(Lang.t("toast.stashed", item.supply().displayName(), pack.count(item.supply()), item.supply().max));
     }
 
     private void updateInteraction(Input in, double dt) {
@@ -201,7 +260,7 @@ public final class Player extends Entity implements LightSource {
         item.setHeld(true);
         world.audio.play("grab", hollowshift.engine.audio.Bus.SFX, 0.8, 1);
         world.emitNoise(new Noise(x, y, PICKUP_NOISE, true));
-        world.toast(Lang.t(item.throwable() ? "toast.pickedThrow" : "toast.pickedDrop", item.displayName(), keyHint(Action.THROW)));
+        world.toast(Lang.t("toast.pickedDrop", item.displayName(), keyHint(Action.DROP)));
     }
 
     private String keyHint(Action a) {
@@ -223,6 +282,15 @@ public final class Player extends Entity implements LightSource {
 
     public boolean isHolding() {
         return held != null;
+    }
+
+    public Pack pack() {
+        return pack;
+    }
+
+    /** Seconds of a meal's second wind left. */
+    public double secondWind() {
+        return secondWind;
     }
 
     public boolean isRunning() {
@@ -276,8 +344,8 @@ public final class Player extends Entity implements LightSource {
     @Override
     public double lightRadius() {
         if (!lanternOn) return 0;
-        double flick = world.rules.has(Rule.BATTERY) && battery < 0.15 ? (Math.sin(animTime * 37 + world.time * 31) > 0.6 ? 0.6 : 1) : 1;
-        return 88 * flick * (world.rules.has(Rule.BATTERY) ? 0.75 + 0.25 * MathUtil.clamp(battery * 3, 0, 1) : 1);
+        double flick = battery < 0.15 ? (Math.sin(animTime * 37 + world.time * 31) > 0.6 ? 0.6 : 1) : 1;
+        return 88 * flick * (0.75 + 0.25 * MathUtil.clamp(battery * 3, 0, 1));
     }
 
     @Override

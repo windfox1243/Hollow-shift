@@ -1,21 +1,23 @@
 package hollowshift.entity;
 
-/** An item used up the moment it is picked up (battery cell, food). */
-public abstract class Consumable extends Item {
+/** An item that is saved in a pocket and used up later (battery cell, food); see {@link Player#useSelected}. */
+public abstract class Consumable extends Item implements Stashable {
     protected Consumable(double x, double y, String displayName) {
         super(x, y, displayName);
     }
 
-    protected abstract void consume(Player p);
+    @Override
+    public String prompt(Player p) {
+        return Stashable.prompt(p, supply());
+    }
 
     @Override
     public boolean canInteract(Player p) {
-        return true;
+        return p.pack().hasRoom(supply());
     }
 
     @Override
     public void interact(Player p) {
-        consume(p);
-        remove();
+        p.stash(this);
     }
 }

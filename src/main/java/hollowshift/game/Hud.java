@@ -7,13 +7,16 @@ import hollowshift.engine.Window;
 import hollowshift.engine.gfx.Text;
 import hollowshift.entity.Entity;
 import hollowshift.entity.Interactable;
+import hollowshift.entity.Pack;
 import hollowshift.entity.Player;
+import hollowshift.entity.Supply;
 import hollowshift.rules.StatusEffect;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 
-/** Heads-up display: objectives, survival bars, exposure/noise meters, prompts and messages. */
+/** Heads-up display: objectives, survival bars, exposure/noise meters, pockets, prompts and messages. */
 public final class Hud {
     private static final Color PANEL = new Color(10, 10, 14, 170);
     private static final Color TEXT = new Color(225, 220, 210);
@@ -51,17 +54,41 @@ public final class Hud {
             bar(g, sx, sy, 16, 2, p.stamina, p.stamina < 0.35 ? new Color(230, 90, 70) : new Color(200, 200, 200));
         }
 
-        // held item (bottom-right)
-        if (p.held() != null) {
-            int hx = Window.WIDTH - 110, hy = Window.HEIGHT - 26;
+        // pockets (bottom-right): four slots, the selected one outlined
+        int slot = 22, gap = 4;
+        int px0 = Window.WIDTH - 8 - Supply.values().length * (slot + gap) + gap, py0 = Window.HEIGHT - 14 - slot;
+        Pack pack = p.pack();
+        for (Supply s : Supply.values()) {
+            int sx = px0 + s.ordinal() * (slot + gap);
+            int n = pack.count(s);
             g.setColor(PANEL);
-            g.fillRect(hx, hy, 102, 18);
+            g.fillRect(sx, py0, slot, slot);
+            if (n > 0) {
+                BufferedImage icon = w.art.get(s.sprite);
+                int iw = icon.getWidth() * 2, ih = icon.getHeight() * 2;
+                g.drawImage(icon, sx + (slot - iw) / 2, py0 + (slot - ih) / 2, iw, ih, null);
+                if (n > 1) Text.draw(g, "x" + n, sx + slot, py0 + slot, 8, TEXT, Text.RIGHT);
+            }
+            Text.draw(g, String.valueOf(s.ordinal() + 1), sx + slot / 2, Window.HEIGHT - 4, 8, s == pack.selected() ? TEXT : DIM, Text.CENTER);
+            if (s == pack.selected()) {
+                g.setColor(new Color(255, 214, 120));
+                g.drawRect(sx - 1, py0 - 1, slot + 1, slot + 1);
+            }
+        }
+        int ly = py0 - 5;
+        Supply sel = pack.selected();
+        if (pack.count(sel) > 0) {
             String key = Input.keyName(w.input().binding(Action.THROW)[0]);
-            Text.draw(g, p.held().displayName().toUpperCase() + "  [" + key + "] "
-                    + Lang.t(p.held().throwable() ? "hud.throw" : "hud.drop"), hx + 5, hy + 12, 9, TEXT, Text.LEFT);
+            Text.draw(g, "[" + key + "] " + Lang.t("hud.use." + sel.key, sel.displayName()), Window.WIDTH - 8, ly, 9, TEXT, Text.RIGHT);
+            ly -= 12;
+        }
+        if (p.held() != null) {
+            String key = Input.keyName(w.input().binding(Action.DROP)[0]);
+            Text.draw(g, p.held().displayName().toUpperCase() + "  [" + key + "] " + Lang.t("hud.drop"), Window.WIDTH - 8, ly, 9, TEXT, Text.RIGHT);
+            ly -= 12;
         }
         Text.draw(g, Lang.t("hud.lantern", Input.keyName(w.input().binding(Action.LANTERN)[0]),
-                Lang.t(p.lanternOn() ? "common.on" : "common.off")), Window.WIDTH - 8, Window.HEIGHT - 32 - (p.held() != null ? 0 : -18), 9, DIM, Text.RIGHT);
+                Lang.t(p.lanternOn() ? "common.on" : "common.off")), Window.WIDTH - 8, ly, 9, DIM, Text.RIGHT);
 
         // interaction prompt above the focused object
         Interactable f = p.focus();

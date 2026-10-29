@@ -42,9 +42,12 @@ Có thể đổi phím trong Cài đặt → Phím điều khiển.
 |---|---|
 | WASD / phím mũi tên | di chuyển |
 | Shift | chạy (gây tiếng động lớn, tốn thể lực) |
-| E / Space | tương tác, nhặt đồ, đọc giấy (giữ phím để kéo cầu dao) |
-| Q | ném đá hoặc pháo sáng / thả cầu chì |
-| F | bật/tắt đèn lồng |
+| E / Space | tương tác, nhặt đồ, nhặt giấy (giữ phím để kéo cầu dao) |
+| Q | dùng món đang chọn trong túi: ném đá, đốt pháo sáng, thay pin, ăn đồ hộp |
+| Tab / R, phím 1–4 | đổi món trong túi |
+| G | thả cầu chì |
+| J | mở sổ ghi chép, đọc lại các mẩu giấy đã nhặt |
+| F | bật/tắt đèn lồng (đèn hao pin ở mọi ca) |
 | Esc | tạm dừng |
 
 ## Cấu trúc thư mục

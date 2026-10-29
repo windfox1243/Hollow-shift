@@ -63,7 +63,7 @@ public final class Window {
         return g;
     }
 
-    public void present() {
+    public void present(java.util.function.Consumer<Graphics2D> overlay) {
         BufferStrategy bs = canvas.getBufferStrategy();
         if (bs == null) return;
         do {
@@ -80,6 +80,11 @@ public final class Window {
                 int h = (int) (HEIGHT * scale);
                 g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
                 g.drawImage(screen, (cw - w) / 2, (ch - h) / 2, w, h, null);
+                // a sharp layer on top, in logical coordinates but rasterised at window size
+                g.translate((cw - w) / 2, (ch - h) / 2);
+                g.scale(w / (double) WIDTH, h / (double) HEIGHT);
+                g.clipRect(0, 0, WIDTH, HEIGHT);
+                overlay.accept(g);
                 g.dispose();
             } while (bs.contentsRestored());
             bs.show();
