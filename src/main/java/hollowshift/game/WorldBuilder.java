@@ -243,23 +243,11 @@ public final class WorldBuilder {
         }
     }
 
-    /** Heavy things the last crew left against the walls. They block their tile. */
-    private static final String[] HEAVY_PROPS = {"decor_minecart", "decor_tipped", "decor_shelf", "decor_table", "decor_bookcase",
-            "decor_barrel", "decor_drum", "decor_drum", "decor_chest", "decor_chest_open", "decor_chest_iron", "decor_anvil",
-            "decor_stove", "decor_sack", "decor_sandbags", "decor_coal", "decor_tnt", "decor_lockers", "decor_spool",
-            "decor_wheelbarrow", "decor_toolrack", "decor_beam", "decor_beam", "decor_fence", "decor_grave", "decor_cross", "crate"};
-    /** Small things dropped on the floor. They lie flat and are walked over. */
-    private static final String[] FLAT_PROPS = {"decor_bones", "decor_bones", "decor_rubble_0", "decor_rubble_1", "decor_rubble_2",
-            "decor_rubble_3", "decor_bottle", "decor_vial", "decor_vial_green", "decor_flask", "decor_hammer", "decor_axe",
-            "decor_axe_long", "decor_pick", "decor_bucket", "decor_stool", "decor_helmet", "decor_helmet", "decor_boots",
-            "decor_tin", "decor_rope", "decor_coalbits_0", "decor_coalbits_1", "decor_chain", "decor_puddle_0", "decor_puddle_1",
-            "decor_shrooms", "decor_shrooms", "decor_lantern", "decor_papers", "decor_rail", "decor_shovel", "decor_bolts",
-            "decor_candle", "decor_stain_0", "decor_stain_1", "decor_stain_2"};
-
     /**
-     * Every room gets two to four heavy props against its walls, cobwebs in its corners and
-     * plenty of clutter on the floor. Heavy props block their tile, so each one is checked
-     * not to cut off any part of the map; everything keeps clear of things you can use.
+     * Furnishes every room according to what it was used for ({@link RoomTheme}). Heavy props
+     * stand in short rows against the walls (a line of barrels, a row of graves) and block their
+     * tiles, each checked not to cut off any part of the map. Clutter lies mostly along the walls
+     * and beside the heavy props, so the middle of a room stays clear; cobwebs go in corners.
      */
     private static void decorate(World world, WorldGenerator.Level level, Rng rng, Marker playerSpot) {
         TileMap map = level.map();
@@ -267,6 +255,7 @@ public final class WorldBuilder {
         List<double[]> taken = new ArrayList<>();
         for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
         taken.add(new double[]{playerSpot.x(), playerSpot.y()});
+        // per room: wall spots {tx, ty, wallDir}, corner spots, open floor spots
         Map<Integer, List<int[]>> walls = new HashMap<>(), floors = new HashMap<>(), corners = new HashMap<>();
         int[] dx = {0, 1, 0, -1}, dy = {-1, 0, 1, 0};
         for (int ty = 0; ty < map.height; ty++) {
@@ -277,58 +266,102 @@ public final class WorldBuilder {
                 // doorway lanes stay clear
                 if (Math.abs(lx - mid) <= 1 && (ly <= 2 || ly >= c - 3) || Math.abs(ly - mid) <= 1 && (lx <= 2 || lx >= c - 3)) continue;
                 int cell = ty / c * level.cellsW() + tx / c;
-                int solids = 0;
-                for (int d = 0; d < 4; d++) if (map.solid(tx + dx[d], ty + dy[d])) solids++;
-                Map<Integer, List<int[]>> into = solids >= 2 ? corners : solids == 1 && map.get(tx, ty) == Tile.FLOOR ? walls : solids == 0 ? floors : null;
-                if (into != null) into.computeIfAbsent(cell, k -> new ArrayList<>()).add(new int[]{tx, ty});
+                int solids = 0, wall = -1;
+                for (int d = 0; d < 4; d++) {
+                    if (map.solid(tx + dx[d], ty + dy[d])) {
+                        solids++;
+                        wall = d;
+                    }
+                }
+                if (solids >= 2) corners.computeIfAbsent(cell, k -> new ArrayList<>()).add(new int[]{tx, ty});
+                else if (solids == 1) walls.computeIfAbsent(cell, k -> new ArrayList<>()).add(new int[]{tx, ty, wall});
+                else floors.computeIfAbsent(cell, k -> new ArrayList<>()).add(new int[]{tx, ty});
             }
         }
         int start = TileMap.toTile(playerSpot.x()) + TileMap.toTile(playerSpot.y()) * map.width;
         int[] reachable = {flood(map, start)};
         for (int cell = 0; cell < level.depth().length; cell++) {
             if (level.depth()[cell] < 0) continue;
-            placeHeavy(world, map, rng, taken, walls.get(cell), rng.range(2, 5), start, reachable);
+            RoomTheme theme = RoomTheme.of(level.roomNames()[cell]);
+            List<int[]> heavySpots = placeHeavy(world, map, rng, taken, walls.get(cell), theme, start, reachable);
             placeFlat(world, rng, taken, corners.get(cell), rng.range(0, 3), new String[]{"decor_web"}, false);
-            placeFlat(world, rng, taken, floors.get(cell), rng.range(5, 10), FLAT_PROPS, true);
+            // clutter: most of it by the walls and the heavy props, a little out in the open
+            int clutter = rng.range(theme.flatMin, theme.flatMax);
+            List<int[]> edge = new ArrayList<>();
+            for (int[] t : walls.getOrDefault(cell, List.of())) if (map.get(t[0], t[1]) != Tile.PROP) edge.add(t);
+            for (int[] h : heavySpots) {
+                for (int d = 0; d < 4; d++) {
+                    int nx = h[0] + dx[d], ny = h[1] + dy[d];
+                    if (!map.solid(nx, ny) && ny / c * level.cellsW() + nx / c == cell) edge.add(new int[]{nx, ny});
+                }
+            }
+            int near = placeFlat(world, rng, taken, edge, clutter - clutter / 4, theme.flat, true);
+            placeFlat(world, rng, taken, floors.get(cell), clutter - near, theme.flat, true);
         }
     }
 
-    private static void placeHeavy(World world, TileMap map, Rng rng, List<double[]> taken, List<int[]> spots, int count,
-                                   int start, int[] reachable) {
-        if (spots == null) return;
+    /** Rows of the theme's heavy props along the walls. Returns the tiles they stand on. */
+    private static List<int[]> placeHeavy(World world, TileMap map, Rng rng, List<double[]> taken, List<int[]> spots,
+                                          RoomTheme theme, int start, int[] reachable) {
+        List<int[]> placed = new ArrayList<>();
+        if (spots == null || theme.heavy.length == 0) return placed;
+        Map<Long, int[]> byTile = new HashMap<>();
+        for (int[] t : spots) byTile.put(key(t[0], t[1]), t);
         List<int[]> pool = new ArrayList<>(spots);
         rng.shuffle(pool);
-        int placed = 0;
-        for (int[] t : pool) {
-            if (placed >= count) break;
-            double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
-            if (!clear(taken, x, y, 24)) continue;
-            map.set(t[0], t[1], Tile.PROP);
-            // never wall off a tile: everything that was reachable must stay reachable
-            if (flood(map, start) != reachable[0] - 1) {
-                map.set(t[0], t[1], Tile.FLOOR);
-                continue;
+        int want = rng.range(theme.heavyMin, theme.heavyMax);
+        for (int[] anchor : pool) {
+            if (placed.size() >= want) break;
+            if (map.get(anchor[0], anchor[1]) != Tile.FLOOR) continue;
+            // a row along the wall: the same prop, or its neighbour in the list
+            int run = rng.range(1, theme.maxRun + 1);
+            String sprite = theme.heavy[rng.range(0, theme.heavy.length)];
+            int stepX = anchor[2] % 2 == 0 ? 1 : 0, stepY = 1 - stepX; // along a N/S wall step in x, along E/W in y
+            int[] cur = anchor;
+            for (int i = 0; i < run && cur != null && placed.size() < want; i++) {
+                if (!putHeavy(world, map, taken, cur, sprite, rng, start, reachable)) break;
+                placed.add(cur);
+                int[] next = byTile.get(key(cur[0] + stepX, cur[1] + stepY));
+                cur = next != null && next[2] == anchor[2] ? next : null;
             }
-            reachable[0]--;
-            world.add(new Decor(x, y, HEAVY_PROPS[rng.range(0, HEAVY_PROPS.length)], false, rng.chance(0.5)));
-            taken.add(new double[]{x, y});
-            placed++;
         }
+        return placed;
     }
 
-    private static void placeFlat(World world, Rng rng, List<double[]> taken, List<int[]> spots, int count, String[] sprites, boolean jitter) {
-        if (spots == null) return;
+    private static boolean putHeavy(World world, TileMap map, List<double[]> taken, int[] t, String sprite, Rng rng,
+                                    int start, int[] reachable) {
+        double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+        if (map.get(t[0], t[1]) != Tile.FLOOR || !clear(taken, x, y, 15)) return false;
+        map.set(t[0], t[1], Tile.PROP);
+        // never wall off a tile: everything that was reachable must stay reachable
+        if (flood(map, start) != reachable[0] - 1) {
+            map.set(t[0], t[1], Tile.FLOOR);
+            return false;
+        }
+        reachable[0]--;
+        world.add(new Decor(x, y, sprite, false, rng.chance(0.5)));
+        taken.add(new double[]{x, y});
+        return true;
+    }
+
+    private static long key(int x, int y) {
+        return (long) x << 32 | (y & 0xffffffffL);
+    }
+
+    private static int placeFlat(World world, Rng rng, List<double[]> taken, List<int[]> spots, int count, String[] sprites, boolean jitter) {
+        if (spots == null || count <= 0) return 0;
         List<int[]> pool = new ArrayList<>(spots);
         rng.shuffle(pool);
         int placed = 0;
         for (int[] t : pool) {
             if (placed >= count) break;
             double x = TileMap.center(t[0]) + (jitter ? rng.range(-4, 4) : 0), y = TileMap.center(t[1]) + (jitter ? rng.range(-3, 3) : 0);
-            if (!clear(taken, x, y, 18)) continue;
+            if (!clear(taken, x, y, 20)) continue;
             world.add(new Decor(x, y, sprites[rng.range(0, sprites.length)], true, rng.chance(0.5)));
             taken.add(new double[]{x, y});
             placed++;
         }
+        return placed;
     }
 
     /** Number of open tiles reachable from tile index start. */

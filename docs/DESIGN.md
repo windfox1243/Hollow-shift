@@ -144,7 +144,9 @@ Cách làm:
   4. phòng thang máy là phòng cao nhất, gần giữa nhất.
 - Kích thước lưới mỗi ca được nới/xoay ngẫu nhiên theo seed, nên cùng một ca cũng có hình dạng khác nhau.
 - Mỗi phòng là một template 13×13, có thể lật X/Y và xoay (8 biến thể mỗi template). Generator bao tường và mở cửa 3 ô theo các cạnh nối.
-- Sau khi dựng phòng, `WorldBuilder` rải đồ trang trí (xe goòng, thùng, kệ, xương, đá vụn, mạng nhện…) dọc tường và trên sàn, tránh lối đi và đồ dùng được. Test kiểm tra mọi template giữ cửa thông và mọi marker đều tới được.
+- Sau khi dựng phòng, `WorldBuilder` bày đồ theo công dụng của phòng (`RoomTheme`, suy ra từ tên mẫu phòng): kho có thùng phuy, bao tải, rương; xưởng có đe, giá dụng cụ, cuộn cáp; khu nghỉ có tủ khóa, bàn, kệ sách; chỗ thờ có bia mộ, nến; đường hầm có xe goòng, cột chống, đống than; khu ngập nước có vũng nước, nấm.
+  - Đồ lớn đứng thành dãy ngắn sát tường và chắn ô của nó (ô `PROP`); mỗi món đều được kiểm tra không chặn mất lối đi nào.
+  - Đồ vụn chủ yếu nằm dọc tường và cạnh đồ lớn, giữa phòng để thoáng; mạng nhện ở góc. Test kiểm tra mọi template giữ cửa thông và mọi marker đều tới được.
 - Cùng seed thì ra cùng map: endless dùng seed người chơi nhập, story đổi seed mỗi lần thử.
 
 ## Asset

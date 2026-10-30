@@ -41,9 +41,9 @@ public final class WorldGenerator {
         this.library = library;
     }
 
-    /** Result of generation. */
+    /** Result of generation. roomNames holds the template stamped into each cell (null if unused). */
     public record Level(TileMap map, List<Marker> markers, int cellsW, int cellsH, int[] doors, int[] depth, int startCell,
-                        Layout layout) {
+                        Layout layout, String[] roomNames) {
         public int maxDepth() {
             return Arrays.stream(depth).max().orElse(0);
         }
@@ -161,15 +161,17 @@ public final class WorldGenerator {
         // 4. stamp rooms
         TileMap map = new TileMap(cellsW * CHUNK, cellsH * CHUNK);
         List<Marker> markers = new ArrayList<>();
+        String[] names = new String[active.length];
         for (int c = 0; c < active.length; c++) {
             if (!active[c]) continue;
             ChunkTemplate t = c == start ? library.pickStart(rng) : library.pickRoom(rng, Integer.bitCount(doors[c]));
+            names[c] = t.name();
             boolean flipX = rng.chance(0.5);
             boolean flipY = c != start && rng.chance(0.5);
             boolean turn = c != start && rng.chance(0.5);
             stamp(map, markers, t, c % cellsW * CHUNK, c / cellsW * CHUNK, doors[c], flipX, flipY, turn, depth[c], c);
         }
-        return new Level(map, markers, cellsW, cellsH, doors, depth, start, layout);
+        return new Level(map, markers, cellsW, cellsH, doors, depth, start, layout, names);
     }
 
     /** Lays the first loop(s); a shape that does not fit the grid or the room budget is skipped. */
