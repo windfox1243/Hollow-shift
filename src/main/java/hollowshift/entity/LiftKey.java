@@ -28,7 +28,7 @@ public final class LiftKey extends Item {
     public void interact(Player p) {
         world.audio.play("grab", hollowshift.engine.audio.Bus.SFX, 0.8, 1.4);
         world.emitNoise(new Noise(x, y, Player.PICKUP_NOISE, true));
-        world.objectives().onKeyFound();
+        world.objectives().onJobDone(hollowshift.game.Job.KEY);
         remove();
     }
 }

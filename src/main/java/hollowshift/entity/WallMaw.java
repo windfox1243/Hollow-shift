@@ -11,14 +11,15 @@ import java.awt.geom.Path2D;
 
 /**
  * CONSUME: a nest of tentacles grown out of the rock. Step too close and they pin you to the
- * wall; mash Interact to tear free before they pull you in, while it hears and comes running.
+ * wall and call the Tenant, which comes at once (through the rock if it is far away). Mash
+ * Interact to tear free before it arrives or the wall pulls you in.
  */
 public final class WallMaw extends Entity {
     private static final double TRIGGER = 14;
     /** Seconds before the wall swallows a pinned player. */
     public static final double SWALLOW_TIME = 5;
     /** Struggle gained per press, and lost per second of not struggling. */
-    private static final double PER_PRESS = 0.12, SLIP = 0.15;
+    private static final double PER_PRESS = 0.14, SLIP = 0.15;
     private static final double REGROW = 15;
     private static final int STRANDS = 7;
 
@@ -50,7 +51,7 @@ public final class WallMaw extends Entity {
             p.y = rootY() - wy * 4 + 3;
             alarmTimer -= dt;
             if (alarmTimer <= 0) {
-                alarmTimer = 1;
+                alarmTimer = 0.5;
                 for (Creature c : world.creatures()) c.alarm(p.x, p.y);
             }
             if (holdTime >= SWALLOW_TIME) world.kill(DeathCause.CONSUMED);
@@ -67,12 +68,14 @@ public final class WallMaw extends Entity {
         held = p;
         holdTime = 0;
         struggle = 0;
-        alarmTimer = 0;
+        alarmTimer = 1.3; // summon() below already sent it; keep it on track after it arrives
         p.setTrappedBy(this);
         p.setFrozen(true);
         world.audio.play("grab", Bus.SFX, 1, 0.7);
         world.camera.shakeFrom(x, y, 4, 0.3);
         world.toast(Lang.t("toast.trapped", hollowshift.engine.Input.keyName(world.input().binding(hollowshift.engine.Action.INTERACT)[0])));
+        world.audio.playAt("creature_step_heavy", x, y, 900, 1, 0.5);
+        for (Creature c : world.creatures()) c.summon(p.x, p.y);
     }
 
     /** One press of Interact while pinned. */

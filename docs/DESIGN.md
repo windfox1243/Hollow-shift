@@ -17,7 +17,7 @@ Top-down survival horror, 640×360 pixel art, **100% Java SE** (Swing/Java2D + j
 | SIGHT | Tenant | `SightSense`: đường nhìn + độ sáng tại vị trí người chơi. Flare đang cháy làm mồi nhử |
 | HEARING | Tenant | `HearingSense`: nghe noise trong bán kính; ở dưới nửa bán kính thì đuổi |
 | SMELL | Tenant | `SmellSense`: đánh hơi theo chu kỳ, đoán vị trí có sai số; có âm báo |
-| CONSUME | Tenant | `WallMaw`: tổ xúc tu trên vách, đứng sát là bị ghim vào tường, bấm E liên tục để giật ra (5 giây là bị nuốt); `FleshNode`: cục thịt dưới sàn, giẫm phải là nó biết chỗ bạn |
+| CONSUME | Tenant | `WallMaw`: tổ xúc tu trên vách, đứng sát là bị ghim vào tường và **gọi quái tới** (ở xa thì nó xuyên đá ra cửa phòng đó), bấm E liên tục để giật ra (5 giây là bị nuốt); `FleshNode`: cục thịt dưới sàn, rải nhiều, hay nằm ngay cạnh đồ cần nhặt và ở cửa phòng, giẫm phải là nó biết chỗ bạn |
 | ECHO | Tenant | `EchoSense` + `EchoState`: tiếng động lớn kéo nó dịch chuyển tới |
 | HASTE | Tenant | Tốc độ tăng 7% mỗi phút (tối đa +50%) |
 | BATTERY | Bạn | `BatteryEffect`: đèn lồng hao pin, nhặt cell để sạc |

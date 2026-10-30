@@ -10,6 +10,7 @@ import hollowshift.engine.io.Resources;
 import hollowshift.entity.*;
 import hollowshift.entity.Player;
 import hollowshift.game.*;
+import hollowshift.game.Job;
 import hollowshift.rules.*;
 import hollowshift.story.Campaign;
 import hollowshift.story.SaveData;
@@ -52,7 +53,10 @@ public final class RunTests {
         test("ECHO: the Tenant arrives through a doorway, not mid-room", RunTests::echoDoorway);
         test("CONSUME: a wall nest pins you; hammering E frees you, waiting kills", RunTests::wallMaw);
         test("CONSUME: stepping on its flesh calls the Tenant", RunTests::fleshNode);
-        test("valves and the gate key are jobs for the lift", RunTests::liftJobs);
+        test("every lift job (fuse, valve, key, fuel, phone) can be done", RunTests::liftJobs);
+        test("each run draws its own mix of jobs, placed in the map", RunTests::jobVariety);
+        test("CONSUME: a wall nest wakes the Tenant and brings it", RunTests::nestSummons);
+        test("CONSUME: flesh knots lie in wait beside useful things", RunTests::knotsAsBait);
         test("COLD: the dark freezes faster than lantern light", RunTests::coldDark);
         test("a note picked up is kept in the journal", RunTests::notesKept);
         test("the lantern drains in every shift, faster under BATTERY", RunTests::lanternDrains);
@@ -198,7 +202,7 @@ public final class RunTests {
                 check(list.size() <= RuleDeck.ruleCount(shift), "too many rules");
                 check(list.stream().filter(r -> r.subject == Rule.Subject.YOU).count() <= 2, "too many survival rules");
                 if (shift < 3) check(!rs.has(Rule.ECHO), "ECHO too early");
-                if (shift < 4) check(!rs.has(Rule.HASTE), "HASTE too early");
+                if (shift < 4) check(!rs.has(Rule.HASTE) && !rs.has(Rule.COLD), "HASTE/COLD too early");
             }
         }
     }
@@ -220,7 +224,7 @@ public final class RunTests {
         // later shifts ask for more before the lift runs
         for (int n = 2; n < c.shifts().size(); n++) {
             ShiftDef prev = c.shift(n - 1), cur = c.shift(n);
-            int jobsA = prev.fuses() + prev.valves() + (prev.liftKey() ? 1 : 0), jobsB = cur.fuses() + cur.valves() + (cur.liftKey() ? 1 : 0);
+            int jobsA = prev.fuses() + prev.jobs(), jobsB = cur.fuses() + cur.jobs();
             check(jobsB > jobsA, "shift " + n + " should have more jobs than shift " + (n - 1));
         }
     }
@@ -569,20 +573,93 @@ public final class RunTests {
         Services sv = services();
         TileMap map = new TileMap(30, 14);
         for (int y = 1; y < 13; y++) for (int x = 1; x < 29; x++) map.set(x, y, Tile.FLOOR);
-        ShiftDef def = new ShiftDef(2, "test", "", 0, 0, 0, 1, 0, 1, RuleSet.of(), false, false, 1, true);
-        ShiftObjectives obj = new ShiftObjectives(1, 1, true);
+        ShiftDef def = new ShiftDef(2, "test", "", 0, 0, 0, 1, 0, 1, RuleSet.of(), false, false, 4);
+        Map<Job, Integer> jobs = new EnumMap<>(Job.class);
+        for (Job j : Job.values()) jobs.put(j, 1);
+        ShiftObjectives obj = new ShiftObjectives(jobs);
         World w = new World(sv, def, map, obj, 1);
-        w.add(new Player(TileMap.center(4), TileMap.center(7)));
+        Player p = w.add(new Player(TileMap.center(4), TileMap.center(7)));
         w.start();
-        check(obj.remaining() == 3, "three jobs expected, got " + obj.remaining());
-        obj.onFuseInstalled();
-        check(!obj.exitOpen(), "lift should still be locked without the valve and key");
-        Valve v = w.add(new Valve(w.player.x, w.player.y));
-        LiftKey k = w.add(new LiftKey(w.player.x + 40, w.player.y));
+        check(obj.remaining() == 5, "five jobs expected, got " + obj.remaining());
+        obj.onJobDone(Job.FUSE);
+        Valve v = w.add(new Valve(p.x, p.y));
+        LiftKey k = w.add(new LiftKey(p.x + 40, p.y));
+        Generator gen = w.add(new Generator(p.x, p.y));
+        FuelCan can = w.add(new FuelCan(p.x, p.y));
+        Phone phone = w.add(new Phone(p.x, p.y));
         tick(w, 1);
-        v.interact(w.player);
-        k.interact(w.player);
+        v.interact(p);
+        k.interact(p);
+        check(!gen.canInteract(p), "the generator needs fuel in hand");
+        can.interact(p);
+        check(gen.canInteract(p), "with a can in hand the generator can be fuelled");
+        gen.interact(p);
+        check(gen.isRunning() && !p.isHolding(), "the can should be poured in");
+        check(!obj.exitOpen(), "the phone call is still missing");
+        phone.interact(p);
         check(obj.exitOpen(), "all jobs done, the lift should run");
+    }
+
+    private static void jobVariety() {
+        Campaign c = Campaign.load();
+        for (int n = 1; n < c.shifts().size(); n++) {
+            ShiftDef def = c.shift(n);
+            Set<Set<Job>> mixes = new HashSet<>();
+            for (long seed = 1; seed <= 40; seed++) {
+                Map<Job, Integer> jobs = WorldBuilder.drawJobs(def, seed);
+                check(jobs.get(Job.FUSE) >= def.fuses(), "shift " + n + ": too few fuses");
+                check(jobs.size() == 1 + def.jobs(), "shift " + n + ": expected " + def.jobs() + " extra jobs, got " + jobs.keySet());
+                mixes.add(jobs.keySet());
+                World w = WorldBuilder.build(services(), def, seed);
+                int gens = (int) w.pendingEntities().stream().filter(e -> e instanceof Generator).count();
+                int cans = (int) w.pendingEntities().stream().filter(e -> e instanceof FuelCan).count();
+                check(gens == jobs.getOrDefault(Job.FUEL, 0), "shift " + n + " seed " + seed + ": generators " + gens + " for " + jobs);
+                check(cans >= gens, "shift " + n + " seed " + seed + ": not enough fuel cans");
+                check(w.pendingEntities().stream().filter(e -> e instanceof Phone).count() == jobs.getOrDefault(Job.PHONE, 0), "phones");
+                check(w.pendingEntities().stream().filter(e -> e instanceof LiftKey).count() == jobs.getOrDefault(Job.KEY, 0), "keys");
+            }
+            if (def.jobs() > 0 && def.jobs() < Job.EXTRAS.length) check(mixes.size() > 1, "shift " + n + " always asks for the same jobs");
+        }
+    }
+
+    private static void nestSummons() {
+        Services sv = services();
+        TileMap map = new TileMap(60, 14);
+        for (int y = 1; y < 13; y++) for (int x = 1; x < 59; x++) map.set(x, y, Tile.FLOOR);
+        ShiftDef def = new ShiftDef(3, "test", "", 0, 0, 0, 1, 0, 1, RuleSet.of(Rule.CONSUME), false, false);
+        World w = new World(sv, def, map, new ShiftObjectives(1), 1);
+        w.addRoomPoint(TileMap.center(50), TileMap.center(7));
+        Player p = w.add(new Player(TileMap.center(4), TileMap.center(1) + 6));
+        Creature c = w.add(new Creature(TileMap.center(55), TileMap.center(7), 1));
+        c.setDormant(30);
+        w.add(new WallMaw(p.x, TileMap.center(1), 0, -1));
+        w.start();
+        tick(w, 2);
+        check(p.trappedBy() != null, "setup: the nest should catch the player");
+        check(!c.isDormant(), "a nest should wake the Tenant");
+        check(c.state() instanceof hollowshift.ai.EchoState, "far away, it should come through the rock, state " + c.state().name());
+    }
+
+    private static void knotsAsBait() {
+        Campaign camp = Campaign.load();
+        ShiftDef def = camp.shift(camp.shifts().size()); // CONSUME is in the final shift
+        int nearBait = 0, total = 0;
+        for (long seed = 1; seed <= 10; seed++) {
+            World w = WorldBuilder.build(services(), def, seed);
+            List<hollowshift.entity.Entity> all = w.pendingEntities();
+            for (hollowshift.entity.Entity e : all) {
+                if (!(e instanceof FleshNode)) continue;
+                total++;
+                for (hollowshift.entity.Entity o : all) {
+                    if ((o instanceof hollowshift.entity.Interactable || o instanceof Heater) && o.distanceTo(e) < 18) {
+                        nearBait++;
+                        break;
+                    }
+                }
+            }
+        }
+        check(total >= 10 * 10, "expected plenty of flesh knots, got " + total + " in 10 maps");
+        check(nearBait >= total / 4, "only " + nearBait + " of " + total + " knots sit beside something useful");
     }
 
     private static void coldDark() {

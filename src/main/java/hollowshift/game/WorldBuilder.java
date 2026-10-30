@@ -32,8 +32,8 @@ public final class WorldBuilder {
         WorldGenerator.Level level = new WorldGenerator(LIBRARY)
                 .generate(seed, gw, gh, shift.rooms(), shift.loopChance());
         int breakers = Math.max(3, shift.fuses());
-        Objectives objectives = shift.finale() ? new FinaleObjectives(breakers)
-                : new ShiftObjectives(shift.fuses(), shift.valves(), shift.liftKey());
+        Map<Job, Integer> jobs = drawJobs(shift, seed);
+        Objectives objectives = shift.finale() ? new FinaleObjectives(breakers) : new ShiftObjectives(jobs);
         World world = new World(services, shift, level.map(), objectives, seed);
         Rng rng = new Rng(seed + 99);
 
@@ -56,19 +56,20 @@ public final class WorldBuilder {
 
         Set<Marker> used = new HashSet<>();
         // fuse boxes (or the final shift's breakers): the deepest rooms first, at most one per room
-        int machines = shift.finale() ? breakers : shift.fuses();
+        int machines = shift.finale() ? breakers : jobs.getOrDefault(Job.FUSE, 0);
         List<Marker> boxSpots = spreadPick(byType.getOrDefault('f', List.of()), machines, rng, used, true);
         if (boxSpots.size() < machines) {
             boxSpots.addAll(spreadPick(byType.getOrDefault('i', List.of()), machines - boxSpots.size(), rng, used, true));
         }
         for (Marker m : boxSpots) world.add(shift.finale() ? new Lever(m.x(), m.y()) : new FuseBox(m.x(), m.y()));
-        // valves on the lift's hydraulics, each in a room of its own; the gate key as deep as it gets
+        // the other jobs, each machine in a room of its own; the gate key and the phone as deep as they get
         List<Marker> machineSpots = new ArrayList<>(byType.getOrDefault('f', List.of()));
         machineSpots.addAll(byType.getOrDefault('i', List.of()));
-        for (Marker m : spreadPick(machineSpots, shift.valves(), rng, used, false)) world.add(new Valve(m.x(), m.y()));
-        if (shift.liftKey() && !shift.finale()) {
-            List<Marker> keySpot = spreadPick(byType.getOrDefault('i', List.of()), 1, rng, used, true);
-            if (!keySpot.isEmpty()) world.add(new LiftKey(keySpot.get(0).x(), keySpot.get(0).y()));
+        for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.VALVE, 0), rng, used, false)) world.add(new Valve(m.x(), m.y()));
+        for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.FUEL, 0), rng, used, false)) world.add(new Generator(m.x(), m.y()));
+        for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.PHONE, 0), rng, used, true)) world.add(new Phone(m.x(), m.y()));
+        for (Marker m : spreadPick(byType.getOrDefault('i', List.of()), jobs.getOrDefault(Job.KEY, 0), rng, used, true)) {
+            world.add(new LiftKey(m.x(), m.y()));
         }
         if (shift.finale()) {
             // the knocking crack: somewhere deep, in a room of its own
@@ -81,7 +82,12 @@ public final class WorldBuilder {
         items.removeIf(used::contains);
         rng.shuffle(items);
         Deque<Marker> spots = new ArrayDeque<>(items);
-        if (!shift.finale()) placeFuses(world, spots, shift.fuses() + Math.max(1, shift.fuses() / 2), used);
+        if (!shift.finale()) {
+            int fuses = jobs.getOrDefault(Job.FUSE, 0);
+            placeCarried(world, spots, fuses + Math.max(1, fuses / 2), used, Fuse::new);
+            int generators = jobs.getOrDefault(Job.FUEL, 0);
+            if (generators > 0) placeCarried(world, spots, generators + 1, used, FuelCan::new);
+        }
         if (!shift.endless()) {
             // two notes per story shift, in the deepest free spots
             List<Marker> deep = new ArrayList<>(spots);
@@ -152,12 +158,11 @@ public final class WorldBuilder {
 
     /**
      * CONSUME: tentacle nests in the walls and knots of flesh on the floor, never in the lift room.
-     * Half the knots sit in doorways, where you have to edge past them.
      */
     private static void placeGrowth(World world, WorldGenerator.Level level, Rng rng, Marker playerSpot) {
         TileMap map = level.map();
         int rooms = countRooms(level);
-        int maws = 2 + rooms / 3, nodes = 3 + rooms / 3;
+        int maws = 2 + rooms / 3, nodes = 4 + rooms * 2 / 3;
         int c = WorldGenerator.CHUNK, mid = c / 2;
         List<double[]> taken = new ArrayList<>();
         for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
@@ -201,16 +206,39 @@ public final class WorldBuilder {
             taken.add(new double[]{x, y});
             placed++;
         }
-        placed = 0;
-        for (List<int[]> pool : List.of(doorSpots, floorSpots)) {
-            int want = pool == doorSpots ? (nodes + 1) / 2 : nodes;
-            for (int[] t : pool) {
-                if (placed >= want) break;
-                double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
-                if (!clear(taken, x, y, 70)) continue;
+        // knots of flesh, many of them, in the spots that hurt: right beside the things you
+        // have to pick up or use, in doorways you have to squeeze through, and some just lying about
+        List<double[]> knots = new ArrayList<>();
+        for (Entity e : world.pendingEntities()) if (e instanceof WallMaw) knots.add(new double[]{e.x, e.y});
+        List<Entity> bait = new ArrayList<>();
+        for (Entity e : world.pendingEntities()) {
+            if (e instanceof Interactable && !(e instanceof Elevator) || e instanceof Heater) bait.add(e);
+        }
+        rng.shuffle(bait);
+        int nearBait = nodes * 2 / 5, inDoors = nodes * 7 / 20;
+        int placedNodes = 0;
+        for (Entity e : bait) {
+            if (placedNodes >= nearBait) break;
+            double a = rng.range(0, Math.PI * 2);
+            for (int k = 0; k < 8; k++, a += Math.PI / 4) {
+                double x = e.x + Math.cos(a) * 13, y = e.y + Math.sin(a) * 11;
+                int tx = TileMap.toTile(x), ty = TileMap.toTile(y);
+                if (map.solid(tx, ty) || ty / c * level.cellsW() + tx / c == level.startCell() || !clear(knots, x, y, 40)) continue;
                 world.add(new FleshNode(x, y));
-                taken.add(new double[]{x, y});
-                placed++;
+                knots.add(new double[]{x, y});
+                placedNodes++;
+                break;
+            }
+        }
+        for (List<int[]> pool : List.of(doorSpots, floorSpots)) {
+            int want = pool == doorSpots ? placedNodes + inDoors : nodes;
+            for (int[] t : pool) {
+                if (placedNodes >= want) break;
+                double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+                if (!clear(knots, x, y, 48) || Math.hypot(x - playerSpot.x(), y - playerSpot.y()) < 120) continue;
+                world.add(new FleshNode(x, y));
+                knots.add(new double[]{x, y});
+                placedNodes++;
             }
         }
     }
@@ -280,15 +308,37 @@ public final class WorldBuilder {
         return true;
     }
 
-    /** Fuses go to rooms other than the start room when possible. */
-    private static void placeFuses(World world, Deque<Marker> spots, int count, Set<Marker> used) {
+    /**
+     * The lift's jobs for one run: the fuses (one more on some runs) plus {@code shift.jobs()}
+     * other kinds drawn at random, so the same shift asks for different work each time.
+     */
+    public static Map<Job, Integer> drawJobs(ShiftDef shift, long seed) {
+        Rng rng = new Rng(seed * 13 + 5);
+        Map<Job, Integer> jobs = new EnumMap<>(Job.class);
+        jobs.put(Job.FUSE, shift.fuses() + (shift.number() > 1 && rng.chance(0.5) ? 1 : 0));
+        List<Job> pool = new ArrayList<>(List.of(Job.EXTRAS));
+        rng.shuffle(pool);
+        boolean late = shift.number() >= 4;
+        for (int i = 0; i < Math.min(shift.jobs(), pool.size()); i++) {
+            Job j = pool.get(i);
+            jobs.put(j, switch (j) {
+                case VALVE -> 1 + (rng.chance(0.5) ? 1 : 0) + (late ? 1 : 0);
+                case FUEL -> 1 + (late && rng.chance(0.4) ? 1 : 0);
+                default -> 1;
+            });
+        }
+        return jobs;
+    }
+
+    /** Things carried in both hands (fuses, fuel) go to rooms other than the start room when possible. */
+    private static void placeCarried(World world, Deque<Marker> spots, int count, Set<Marker> used, ItemFactory f) {
         List<Marker> deep = new ArrayList<>();
         for (Marker m : spots) if (m.depth() > 0) deep.add(m);
         for (int i = 0; i < count && !deep.isEmpty(); i++) {
             Marker m = deep.remove(0);
             spots.remove(m);
             used.add(m);
-            world.add(new Fuse(m.x(), m.y()));
+            world.add(f.create(m.x(), m.y()));
         }
     }
 

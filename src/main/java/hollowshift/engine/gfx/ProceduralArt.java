@@ -42,6 +42,9 @@ final class ProceduralArt {
             case "note" -> note(variant == 1);
             case "valve" -> valve(variant == 1);
             case "item_key" -> key();
+            case "item_fuel" -> fuelCan();
+            case "generator" -> generator(variant);
+            case "phone" -> phone(variant == 1);
             case "decor_bones" -> bones();
             case "decor_rubble" -> rubble(variant);
             case "decor_web" -> web();
@@ -529,6 +532,69 @@ final class ProceduralArt {
         g.drawLine(6, 0, 13, 5);
         g.setColor(new Color(150, 150, 160));
         g.drawLine(7, 0, 13, 4);
+        g.dispose();
+        return im;
+    }
+
+    /** A red jerrycan. */
+    private BufferedImage fuelCan() {
+        BufferedImage im = img(10, 12);
+        Graphics2D g = im.createGraphics();
+        g.setColor(OUTLINE);
+        g.fillRect(0, 2, 10, 10);
+        g.setColor(new Color(170, 40, 34));
+        g.fillRect(1, 3, 8, 8);
+        g.setColor(new Color(210, 70, 56));
+        g.drawLine(2, 4, 7, 9);
+        g.setColor(OUTLINE);
+        g.fillRect(2, 0, 4, 3);
+        g.setColor(new Color(150, 150, 160));
+        g.fillRect(6, 0, 2, 3);
+        g.dispose();
+        return im;
+    }
+
+    /** Generator: 0 = dead, 1/2 = running (the exhaust puffs). */
+    private BufferedImage generator(int frame) {
+        BufferedImage im = img(18, 16);
+        Graphics2D g = im.createGraphics();
+        g.setColor(OUTLINE);
+        g.fillRect(0, 5, 18, 11);
+        g.setColor(new Color(176, 140, 50));
+        g.fillRect(1, 6, 16, 8);
+        g.setColor(new Color(90, 72, 30));
+        for (int x = 3; x < 12; x += 2) g.drawLine(x, 8, x, 12);
+        g.setColor(new Color(70, 70, 76));
+        g.fillRect(13, 7, 3, 6);
+        g.setColor(frame == 0 ? new Color(110, 30, 30) : new Color(120, 255, 140));
+        g.fillRect(14, 8, 1, 1);
+        g.setColor(new Color(60, 60, 66));
+        g.fillRect(2, 2, 2, 4);
+        if (frame > 0) {
+            g.setColor(new Color(120, 120, 130, 140));
+            g.fillOval(frame == 1 ? 1 : 2, frame == 1 ? 0 : -1, 4, 3);
+        }
+        g.dispose();
+        return im;
+    }
+
+    /** A crank telephone in a box on the wall. */
+    private BufferedImage phone(boolean used) {
+        BufferedImage im = img(12, 16);
+        Graphics2D g = im.createGraphics();
+        g.setColor(OUTLINE);
+        g.fillRect(0, 0, 12, 14);
+        g.setColor(new Color(96, 70, 46));
+        g.fillRect(1, 1, 10, 12);
+        g.setColor(new Color(200, 190, 160));
+        g.fillOval(3, 2, 3, 3);
+        g.fillOval(6, 2, 3, 3);
+        g.setColor(OUTLINE);
+        g.fillRect(2, 7, 7, 2);
+        g.setColor(used ? new Color(120, 255, 140) : new Color(150, 150, 160));
+        g.drawLine(10, 8, 11, 11);
+        g.setColor(OUTLINE);
+        g.fillRect(4, 14, 4, 2);
         g.dispose();
         return im;
     }

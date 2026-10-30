@@ -3,64 +3,50 @@ package hollowshift.game;
 import hollowshift.engine.Lang;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Normal shift: everything the lift needs before it will run. Power every fuse box, and in
- * later shifts also bleed the hydraulic valves and find the key to the lift gate.
+ * Normal shift: everything the lift needs before it will run. Always the fuse boxes, and from
+ * the second shift on a mix drawn per run: valves, the gate key, the generator, the phone.
  */
 public final class ShiftObjectives extends Objectives {
-    private final int fuses;
-    private final int valves;
-    private final boolean needsKey;
-    private int installed;
-    private int opened;
-    private boolean hasKey;
+    private final Map<Job, Integer> needed = new EnumMap<>(Job.class);
+    private final Map<Job, Integer> done = new EnumMap<>(Job.class);
 
     public ShiftObjectives(int fuses) {
-        this(fuses, 0, false);
+        this(Map.of(Job.FUSE, fuses));
     }
 
-    public ShiftObjectives(int fuses, int valves, boolean needsKey) {
-        this.fuses = fuses;
-        this.valves = valves;
-        this.needsKey = needsKey;
+    public ShiftObjectives(Map<Job, Integer> jobs) {
+        needed.putAll(jobs);
     }
 
-    @Override
-    public void onFuseInstalled() {
-        installed++;
-        progress(Lang.t("toast.box", installed, fuses));
+    public int needed(Job j) {
+        return needed.getOrDefault(j, 0);
     }
 
-    @Override
-    public void onValveOpened() {
-        opened++;
-        progress(Lang.t("toast.valve", opened, valves));
+    public int done(Job j) {
+        return done.getOrDefault(j, 0);
     }
 
     @Override
-    public void onKeyFound() {
-        hasKey = true;
-        progress(Lang.t("toast.key"));
-    }
-
-    private void progress(String message) {
+    public void onJobDone(Job job) {
+        done.merge(job, 1, Integer::sum);
         if (exitOpen()) {
             world.toast(Lang.t("toast.restored"));
             world.audio.play("elevator_bell");
         } else {
-            world.toast(message);
+            world.toast(Lang.t("toast.job." + job.name(), done(job), needed(job)));
         }
-    }
-
-    public int installed() {
-        return installed;
     }
 
     /** Jobs still to do before the lift runs. */
     public int remaining() {
-        return Math.max(0, fuses - installed) + Math.max(0, valves - opened) + (needsKey && !hasKey ? 1 : 0);
+        int left = 0;
+        for (Map.Entry<Job, Integer> e : needed.entrySet()) left += Math.max(0, e.getValue() - done(e.getKey()));
+        return left;
     }
 
     @Override
@@ -73,19 +59,18 @@ public final class ShiftObjectives extends Objectives {
         return Lang.t("obj.locked", remaining());
     }
 
+    /** Unfinished jobs are marked with ">", done ones are dimmed. */
     @Override
     public List<String> lines() {
         if (exitOpen()) return List.of(Lang.t("obj.restored"), Lang.t("obj.return"));
         List<String> out = new ArrayList<>();
-        out.add(line(installed >= fuses, Lang.t("obj.fuses", installed, fuses)));
-        if (valves > 0) out.add(line(opened >= valves, Lang.t("obj.valves", opened, valves)));
-        if (needsKey) out.add(line(hasKey, Lang.t(hasKey ? "obj.keyFound" : "obj.key")));
+        for (Job j : Job.values()) {
+            int n = needed(j);
+            if (n == 0) continue;
+            boolean finished = done(j) >= n;
+            out.add((finished ? "  " : "> ") + Lang.t("obj.job." + j.name(), Math.min(done(j), n), n));
+        }
         out.add(Lang.t("obj.then"));
         return out;
-    }
-
-    /** Unfinished jobs are marked with ">", done ones are dimmed. */
-    private static String line(boolean done, String text) {
-        return done ? "  " + text : "> " + text;
     }
 }

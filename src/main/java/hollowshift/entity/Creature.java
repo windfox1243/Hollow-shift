@@ -29,6 +29,8 @@ import java.util.List;
 public final class Creature extends Entity implements LightSource {
     /** Distance at which it stops striding and lashes at the player. */
     public static final double REACH_RANGE = 80;
+    /** Farther than this from a summoning nest, it jumps to the room's doorway instead of walking. */
+    private static final double SUMMON_JUMP = 320;
     private static final double ARRIVE = 8;
     private static final double KILL_RANGE = 16;
     private static final double GRAB_RADIUS = 10;
@@ -153,6 +155,16 @@ public final class Creature extends Entity implements LightSource {
             return;
         }
         setState(new InvestigateState(s.x(), s.y()));
+    }
+
+    /**
+     * A wall nest has caught the player (CONSUME): it wakes if asleep, and if it is far off it
+     * slips through the rock and comes in at a doorway of that room, as with ECHO.
+     */
+    public void summon(double px, double py) {
+        dormant = 0;
+        if (!isChasing() && !isBusy() && distanceTo(px, py) > SUMMON_JUMP) echoTo(px, py);
+        else alarm(px, py);
     }
 
     /** Its growth was touched (CONSUME): it knows exactly where the player is. */

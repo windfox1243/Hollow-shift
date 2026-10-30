@@ -21,16 +21,11 @@ public abstract class Objectives {
         this.world = world;
     }
 
-    public void onFuseInstalled() {
+    /** One of the lift's jobs is done (fuse box powered, valve bled...). */
+    public void onJobDone(Job job) {
     }
 
     public void onLeverPulled() {
-    }
-
-    public void onValveOpened() {
-    }
-
-    public void onKeyFound() {
     }
 
     /** Whether the lift can be used. */

@@ -41,6 +41,6 @@ public final class Valve extends Fixture implements Interactable {
         open = true;
         world.audio.playAt("surge", x, y, 900, 0.7, 1.6);
         world.emitNoise(new Noise(x, y, NOISE, true));
-        world.objectives().onValveOpened();
+        world.objectives().onJobDone(hollowshift.game.Job.VALVE);
     }
 }

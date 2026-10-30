@@ -4,6 +4,7 @@ import hollowshift.engine.Lang;
 import hollowshift.engine.Rng;
 import hollowshift.engine.io.Json;
 import hollowshift.engine.io.Resources;
+import hollowshift.game.Job;
 import hollowshift.rules.Rule;
 import hollowshift.rules.RuleDeck;
 import hollowshift.rules.RuleSet;
@@ -53,8 +54,7 @@ public final class Campaign {
                 rules,
                 Json.bool(m.get("finale"), false),
                 false,
-                Json.integer(m.get("valves"), 0),
-                Json.bool(m.get("liftKey"), false));
+                Json.integer(m.get("jobs"), 0));
     }
 
     public List<String> tips() {
@@ -72,9 +72,9 @@ public final class Campaign {
         int h = Math.min(3 + (n - 1) / 2, 7);
         int rooms = Math.min(4 + n * 2, (int) (w * h * 0.8));
         int fuses = Math.min(3 + n / 2, 8);
-        int valves = n >= 2 ? Math.min(1 + n / 3, 3) : 0;
+        int jobs = Math.min(n / 2, Job.EXTRAS.length);
         double speed = Math.min(1.35, 1 + 0.04 * (n - 1));
         RuleSet rules = RuleDeck.draw(n, rng);
-        return new ShiftDef(n, Lang.t("endless.shift", n), "", w, h, rooms, fuses, 0.15, speed, rules, false, true, valves, n >= 2);
+        return new ShiftDef(n, Lang.t("endless.shift", n), "", w, h, rooms, fuses, 0.15, speed, rules, false, true, jobs);
     }
 }

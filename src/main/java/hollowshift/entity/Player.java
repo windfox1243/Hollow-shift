@@ -17,7 +17,7 @@ public final class Player extends Entity implements LightSource {
     // walking just outpaces the Tenant's opening chase (75 px/s); a long chase speeds it up
     // past walking pace, so you have to run (as in the original, where the player is faster)
     public static final double WALK_SPEED = 80;
-    public static final double RUN_SPEED = 120;
+    public static final double RUN_SPEED = 105;
     // noise radii follow the original (footstep 175, pick-up 500 in 320 px rooms), scaled to 240 px rooms
     public static final double STEP_NOISE_WALK = 130;
     public static final double STEP_NOISE_RUN = 230;
