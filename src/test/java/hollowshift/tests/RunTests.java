@@ -51,6 +51,7 @@ public final class RunTests {
         test("pockets: items are stashed, capped and used from the pack", RunTests::pockets);
         test("no room is a dead end: every door lies on a loop", RunTests::noDeadEnds);
         test("ECHO: the Tenant arrives through a doorway, not mid-room", RunTests::echoDoorway);
+        test("ECHO: after a loud job it takes 3 s and comes out 150 px away", RunTests::echoHeadStart);
         test("CONSUME: a wall nest pins you; hammering E frees you, waiting kills", RunTests::wallMaw);
         test("CONSUME: stepping on its flesh calls the Tenant", RunTests::fleshNode);
         test("every lift job (fuse, valve, key, fuel, phone) can be done", RunTests::liftJobs);
@@ -542,10 +543,39 @@ public final class RunTests {
         List<double[]> doors = WorldGenerator.doorways(w.map, far[0], far[1]);
         check(doors.size() >= 2, "a room should have at least two doorways, got " + doors.size());
         c.echoTo(far[0], far[1]);
-        tick(w, 50);
+        // look at it the moment it has come out, before it starts searching
+        for (int i = 0; i < 60 * 5 && c.state() instanceof hollowshift.ai.EchoState; i++) tick(w, 1);
         double best = Double.MAX_VALUE;
         for (double[] d : doors) best = Math.min(best, c.distanceTo(d[0], d[1]));
         check(best < 2, "the Tenant should be standing in a doorway, nearest is " + (int) best + " px away");
+    }
+
+    /** A breaker or fuse box makes the noise right where the player stands, on every story map size. */
+    private static void echoHeadStart() {
+        Campaign camp = Campaign.load();
+        for (long seed = 1; seed <= 12; seed++) {
+            World w = WorldBuilder.build(services(), camp.shift(4 + (int) (seed % 2)), seed);
+            w.start();
+            tick(w, 1);
+            Creature c = w.creatures().get(0);
+            c.setDormant(0);
+            Player p = w.player;
+            double[] job = w.randomRoomPoint();
+            p.x = job[0];
+            p.y = job[1];
+            c.echoTo(p.x, p.y);
+            int i = 0;
+            for (; i < 60 * 5 && c.state() instanceof hollowshift.ai.EchoState; i++) {
+                tick(w, 1);
+                // visible only while fading out (first 0.6 s) or once it comes back after the travel
+                check(!c.isVisibleInWorld() || i < 40 || i >= 60 * 2.8, "seed " + seed + ": it is back after only " + i / 60.0 + " s");
+            }
+            check(i >= 60 * 3, "seed " + seed + ": it was back in " + i / 60.0 + " s");
+            check(c.isVisibleInWorld(), "seed " + seed + ": it should be back by now");
+            check(c.distanceTo(p) >= hollowshift.ai.EchoState.MIN_DISTANCE - 1 || w.death() != null,
+                    "seed " + seed + ": it came out " + (int) c.distanceTo(p) + " px from the player");
+            check(w.death() == null, "seed " + seed + ": standing still until it comes back should not be fatal");
+        }
     }
 
     private static void wallMaw() {
