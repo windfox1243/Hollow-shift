@@ -201,7 +201,5 @@
   "prompt.fuel": "Đổ dầu vào máy (giữ phím)",
   "prompt.needsFuel": "Máy phát (cần một can dầu)",
   "prompt.phone": "Quay điện thoại (giữ phím)",
-  "item.fuel": "can dầu",
-  "brief.carried": "Vẫn như các ca trước:",
-  "brief.new": "- THÊM ĐÊM NAY -"
+  "item.fuel": "can dầu"
 }

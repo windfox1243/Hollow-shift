@@ -201,7 +201,5 @@
   "prompt.fuel": "Pour in the fuel (hold)",
   "prompt.needsFuel": "Generator (needs a can of fuel)",
   "prompt.phone": "Crank the phone (hold)",
-  "item.fuel": "fuel can",
-  "brief.carried": "Still true from earlier shifts:",
-  "brief.new": "- NEW TONIGHT -"
+  "item.fuel": "fuel can"
 }

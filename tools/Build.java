@@ -39,7 +39,7 @@ public class Build {
     static final Path DIST = ROOT.resolve("dist");
     static final String MAIN = "hollowshift.Main";
     /** Version stamped on the packaged app; bump it for each release. */
-    static final String VERSION = "1.2.0";
+    static final String VERSION = "1.2.1";
     /** Build-time only decoders for convert-audio (OGG, MP3); never packaged into the game. */
     static final Path JORBIS = ROOT.resolve("tools/lib/jorbis-0.0.17.4.jar");
     static final Path JLAYER = ROOT.resolve("tools/lib/jlayer-1.0.1.jar");

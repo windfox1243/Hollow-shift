@@ -17,8 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Announces the shift: intro text (typewriter), then the rules. In the story, rules carried over
- * from earlier shifts are listed together on one line; only the new ones are announced in full.
+ * Announces the shift: intro text (typewriter), then the rules. In the story, rules stack from
+ * shift to shift, so only the ones new tonight are announced.
  */
 public final class BriefingScene extends Scene {
     private static final double CHARS_PER_SECOND = 55;
@@ -102,17 +102,6 @@ public final class BriefingScene extends Scene {
         if (introDone()) {
             if (rules.isEmpty() && carried.isEmpty()) {
                 Text.draw(g, Lang.t("brief.norules"), cx, y + 16, 12, new Color(200, 190, 170), Text.CENTER);
-            }
-            if (!carried.isEmpty()) {
-                StringBuilder names = new StringBuilder();
-                for (Rule r : carried) names.append(names.isEmpty() ? "" : "  /  ").append(Lang.t("rule." + r.name() + ".short"));
-                Text.draw(g, Lang.t("brief.carried"), cx, y + 10, 9, new Color(150, 144, 136), Text.CENTER);
-                Text.draw(g, names.toString(), cx, y + 22, 10, new Color(200, 180, 160), Text.CENTER);
-                y += 32;
-            }
-            if (!rules.isEmpty() && !carried.isEmpty()) {
-                Text.draw(g, Lang.t("brief.new"), cx, y + 8, 9, new Color(255, 214, 120), Text.CENTER);
-                y += 10;
             }
             for (int i = 0; i < rulesShown; i++) {
                 Rule r = rules.get(i);
