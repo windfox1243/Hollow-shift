@@ -5,7 +5,7 @@ Game kinh dị sinh tồn 2d
 Giới thiệu:
 Bạn là thợ mỏ ca đêm ở Hầm 9. Tổ ca ngày xuống hầm từ sáng rồi không ai lên lại. Nhiệm vụ của bạn là làm cho thang máy chạy lại: tìm cầu chì cấp điện cho các hộp điện. Từ ca 2, mỗi lần chơi còn bốc thêm vài việc khác nhau: xả van áp suất, tìm chìa khóa cửa thang, xách can dầu đổ vào máy phát, quay điện thoại gọi lên trên. Xong thì đi thang lên. Nhưng dưới đó còn có một thứ khác.
 
-Đầu mỗi ca, game công bố luật chơi: nó cảm nhận bạn bằng cách nào (nhìn, nghe, ngửi, đi theo tiếng vọng…), nó đã lan tới đâu (xúc tu mọc trong vách đá, cục thịt dưới sàn), và ngoài nó ra còn thứ gì có thể giết bạn (giá lạnh, cái đói, đèn hết pin).
+Đầu mỗi ca, game công bố luật chơi: nó cảm nhận bạn bằng cách nào (nhìn, nghe, ngửi, đi theo tiếng vọng…), nó đã lan tới đâu (xúc tu mọc trong vách đá, cục thịt dưới sàn), và ngoài nó ra còn thứ gì có thể giết bạn (giá lạnh, cái đói, đèn hết pin). Luật cộng dồn: ca sau giữ nguyên mọi luật của ca trước và thêm luật mới.
 
 ## Có gì trong game
 - Cốt truyện hé lộ dần qua lời dẫn mỗi ca và 10 mẩu giấy rải trong hầm. Game có **hai kết thúc**, một trong số đó là kết thúc ẩn.

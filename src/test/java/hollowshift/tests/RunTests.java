@@ -221,6 +221,11 @@ public final class RunTests {
             check(levers == Math.max(3, last.fuses()), "seed " + seed + ": final map has " + levers + " breakers");
             check(w.pendingEntities().stream().anyMatch(e -> e instanceof Crack), "seed " + seed + ": final map has no crack");
         }
+        // rules stack: every shift keeps all the rules of the one before
+        for (int n = 2; n <= c.shifts().size(); n++) {
+            List<Rule> before = c.shift(n - 1).rules().ordered(), now = c.shift(n).rules().ordered();
+            check(now.containsAll(before) && now.size() > before.size(), "shift " + n + " rules " + now + " should extend " + before);
+        }
         // later shifts ask for more before the lift runs
         for (int n = 2; n < c.shifts().size(); n++) {
             ShiftDef prev = c.shift(n - 1), cur = c.shift(n);

@@ -39,8 +39,11 @@ public final class Campaign {
 
     public ShiftDef shift(int number) {
         Map<String, Object> m = shifts.get(number - 1);
+        // rules stack: everything from earlier shifts first, then what this shift adds
         RuleSet rules = new RuleSet();
-        for (Object r : Json.list(m.get("rules"))) rules.add(Rule.valueOf(Json.str(r, "")));
+        for (int i = 0; i < number; i++) {
+            for (Object r : Json.list(shifts.get(i).get("rules"))) rules.add(Rule.valueOf(Json.str(r, "")));
+        }
         return new ShiftDef(number,
                 // shifts have no names, only a number (the last one is simply "the final shift")
                 Json.bool(m.get("finale"), false) ? Lang.t("shift.final") : Lang.t("shift.label", number),

@@ -5,6 +5,7 @@
 // In the final shift "fuses" is the number of main breakers.
 // Grid sizes are a starting point: each run may widen, heighten or turn the grid.
 // rules: SIGHT HEARING SMELL CONSUME ECHO HASTE BATTERY COLD HUNGER
+// Rules stack: each shift keeps every rule of the shifts before it, "rules" lists only the new ones.
 {
   "shifts": [
     {
@@ -24,13 +25,13 @@
     },
     {
       "cellsW": 5, "cellsH": 4, "rooms": 13, "fuses": 4, "jobs": 3,
-      "creatureSpeed": 1.05,
+      "creatureSpeed": 1.0,
       "rules": ["SMELL", "ECHO", "COLD"]
     },
     {
       "cellsW": 5, "cellsH": 5, "rooms": 15, "fuses": 4,
-      "creatureSpeed": 1.05,
-      "rules": ["SIGHT", "HEARING", "CONSUME", "COLD"],
+      "creatureSpeed": 1.0,
+      "rules": ["CONSUME"],
       "finale": true
     }
   ]

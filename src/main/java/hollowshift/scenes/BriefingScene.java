@@ -7,21 +7,29 @@ import hollowshift.engine.Scene;
 import hollowshift.engine.Window;
 import hollowshift.engine.gfx.Text;
 import hollowshift.rules.Rule;
+import hollowshift.rules.RuleSet;
 import hollowshift.story.Run;
 import hollowshift.story.ShiftDef;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.util.ArrayList;
 import java.util.List;
 
-/** Announces the shift: intro text (typewriter) then the rules, one at a time. */
+/**
+ * Announces the shift: intro text (typewriter), then the rules. In the story, rules carried over
+ * from earlier shifts are listed together on one line; only the new ones are announced in full.
+ */
 public final class BriefingScene extends Scene {
     private static final double CHARS_PER_SECOND = 55;
     private static final double RULE_INTERVAL = 0.9;
 
     private final Run run;
     private final ShiftDef shift;
+    /** The rules announced one by one: new this shift (story) or all of them (endless). */
     private final List<Rule> rules;
+    /** Rules kept from earlier story shifts. */
+    private final List<Rule> carried = new ArrayList<>();
     private double t;
     private int typed;
     private int rulesShown;
@@ -32,7 +40,14 @@ public final class BriefingScene extends Scene {
         super(game);
         this.run = run;
         this.shift = run.def(game.campaign);
-        this.rules = shift.rules().ordered();
+        List<Rule> all = shift.rules().ordered();
+        if (!shift.endless() && shift.number() > 1) {
+            RuleSet before = game.campaign.shift(shift.number() - 1).rules();
+            for (Rule r : all) if (before.has(r)) carried.add(r);
+        }
+        List<Rule> fresh = new ArrayList<>(all);
+        fresh.removeAll(carried);
+        this.rules = fresh;
     }
 
     private boolean introDone() {
@@ -85,15 +100,26 @@ public final class BriefingScene extends Scene {
             y = Text.drawWrapped(g, shift.intro().substring(0, typed), cx, y, 520, 10, new Color(190, 184, 172), Text.CENTER) + 10;
         }
         if (introDone()) {
-            if (rules.isEmpty()) {
+            if (rules.isEmpty() && carried.isEmpty()) {
                 Text.draw(g, Lang.t("brief.norules"), cx, y + 16, 12, new Color(200, 190, 170), Text.CENTER);
+            }
+            if (!carried.isEmpty()) {
+                StringBuilder names = new StringBuilder();
+                for (Rule r : carried) names.append(names.isEmpty() ? "" : "  /  ").append(Lang.t("rule." + r.name() + ".short"));
+                Text.draw(g, Lang.t("brief.carried"), cx, y + 10, 9, new Color(150, 144, 136), Text.CENTER);
+                Text.draw(g, names.toString(), cx, y + 22, 10, new Color(200, 180, 160), Text.CENTER);
+                y += 32;
+            }
+            if (!rules.isEmpty() && !carried.isEmpty()) {
+                Text.draw(g, Lang.t("brief.new"), cx, y + 8, 9, new Color(255, 214, 120), Text.CENTER);
+                y += 10;
             }
             for (int i = 0; i < rulesShown; i++) {
                 Rule r = rules.get(i);
                 Color c = r.subject == Rule.Subject.TENANT ? new Color(235, 120, 100) : new Color(120, 190, 240);
                 Text.draw(g, r.title(), cx, y + 12, 12, c, Text.CENTER);
-                Text.draw(g, r.hint(), cx, y + 24, 9, new Color(160, 154, 146), Text.CENTER);
-                y += 31;
+                // long hints wrap instead of running off the screen
+                y = Text.drawWrapped(g, r.hint(), cx, y + 24, 540, 9, new Color(160, 154, 146), Text.CENTER) - 6;
             }
         }
         if (allShown() && ruleTimer <= 0 && (int) (t * 2) % 2 == 0) {
