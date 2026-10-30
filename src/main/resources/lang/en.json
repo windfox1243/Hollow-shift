@@ -141,13 +141,13 @@
   "prompt.note": "Read the note",
   "note.close": "[{0}] put it away",
   "note.1": "9 a.m. Knocking in the west wall, three at a time, then a pause, steady as counting. Strange thing is, it doesn't sound like a threat. It sounds like someone telling us to get away.",
-  "note.2": "Don't run. It doesn't need to see you. It listens.",
-  "note.3": "Replaced the level 3 bulbs, fourth time this week. The bulbs aren't blown. Every time, someone has unscrewed them and laid them on the floor in a straight line.",
-  "note.4": "Loc stood in the dark for an hour and wouldn't answer. When we dragged him out he was ice cold, eyes wide open, staring at the ventilation shaft.",
-  "note.5": "Mum, down here they set out one extra meal every shift, for someone who isn't on the list. When I asked, the old gatekeeper said: that one's for the lodger.",
-  "note.6": "Flooding on level 9. Fourteen men. Thirteen recovered. The fourteenth is still clocked in every day.",
-  "note.7": "IT FOLLOWS SOUND. THROW STONES FAR. DON'T BREATHE LOUD.",
-  "note.8": "NIGHT FIVE. DON'T LISTEN AGAIN.",
+  "note.2": "Mum, down here they set out one extra meal every shift, for someone who isn't on the list. When I asked, the old gatekeeper said: that one's for the lodger.",
+  "note.3": "Don't run. It doesn't need to see you. It listens.",
+  "note.4": "Flooding on level 9. Fourteen men. Thirteen recovered. The fourteenth is still clocked in every day.",
+  "note.5": "Replaced the level 3 bulbs, fourth time this week. The bulbs aren't blown. Every time, someone has unscrewed them and laid them on the floor in a straight line.",
+  "note.6": "NIGHT FIVE. DON'T LISTEN AGAIN.",
+  "note.7": "Loc stood in the dark for an hour and wouldn't answer. When we dragged him out he was ice cold, eyes wide open, staring at the ventilation shaft.",
+  "note.8": "IT FOLLOWS SOUND. THROW STONES FAR. DON'T BREATHE LOUD.",
   "note.9": "Phạm Văn Toàn\nTrần Đức Lộc\nNguyễn Văn Hải\nLê Minh Quang\nVũ Thanh Sơn\nHoàng Văn Bảy\n",
   "note.10": "If you're reading this, you've been down here five nights already. Go up and you'll have to come back down. Stay, and someone else gets to go up. Follow the knocking at the far west end. Don't be afraid. I was too.",
   "item.note": "note",
@@ -221,9 +221,9 @@
     "don't open the last crate"
   ],
   "scrawl.WORKSHOP": [
-    "the engine calls it",
+    "[HEARING] the engine calls it",
     "shut it off before you leave",
-    "keep the lights low",
+    "[SIGHT] keep the lights low",
     "Loc's hammer"
   ],
   "scrawl.QUARTERS": [
@@ -240,7 +240,7 @@
     "we paid the rent"
   ],
   "scrawl.TUNNEL": [
-    "don't run",
+    "[HEARING] don't run",
     "caved in 1987",
     "THAT WAY",
     "|||| |||| ||",

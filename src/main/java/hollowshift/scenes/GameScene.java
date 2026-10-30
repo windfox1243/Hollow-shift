@@ -168,6 +168,13 @@ public final class GameScene extends Scene {
         } else if (world.death() == null) {
             fearOverlay.render(g, world);
             hud.render(g, world);
+            // notes are drawn into the pixel layer too, so they look like part of the game
+            if (journal != null) {
+                journal.render(g, game.input);
+            } else if (world.reading() != null) {
+                String key = hollowshift.engine.Input.keyName(game.input.binding(Action.INTERACT)[0]);
+                notePaper.render(g, world.readingNumber(), world.reading(), Lang.t("note.close", key));
+            }
         }
         if (scared()) {
             jumpscare.render(g, deathTimer);
@@ -188,18 +195,6 @@ public final class GameScene extends Scene {
                 Text.draw(g, r.title(), Window.WIDTH / 2, y, 9, new Color(170, 160, 150), Text.CENTER);
                 y += 12;
             }
-        }
-    }
-
-    /** Notes are drawn at the window's full resolution so the handwriting stays sharp. */
-    @Override
-    public void renderOverlay(Graphics2D g) {
-        if (world.death() != null || paused) return;
-        if (journal != null) {
-            journal.render(g, game.input);
-        } else if (world.reading() != null) {
-            String key = hollowshift.engine.Input.keyName(game.input.binding(Action.INTERACT)[0]);
-            notePaper.render(g, world.readingNumber(), world.reading(), Lang.t("note.close", key));
         }
     }
 }

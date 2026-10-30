@@ -426,7 +426,15 @@ public final class WorldBuilder {
         for (int cell : rooms) {
             if (want <= 0) break;
             RoomTheme theme = RoomTheme.of(level.roomNames()[cell]);
-            List<String> lines = new ArrayList<>(Lang.list("scrawl." + theme.name()));
+            // a line tagged "[RULE] ..." hints at a rule, so it only turns up while that rule is in force
+            List<String> lines = new ArrayList<>();
+            for (String l : Lang.list("scrawl." + theme.name())) {
+                if (l.startsWith("[")) {
+                    if (!world.rules.has(Rule.valueOf(l.substring(1, l.indexOf(']'))))) continue;
+                    l = l.substring(l.indexOf(']') + 1).trim();
+                }
+                lines.add(l);
+            }
             lines.removeAll(used);
             if (lines.isEmpty()) continue;
             List<int[]> spots = new ArrayList<>(northWalls.get(cell));

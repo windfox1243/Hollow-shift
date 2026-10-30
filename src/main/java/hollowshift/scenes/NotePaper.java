@@ -13,40 +13,42 @@ import java.util.List;
  * Draws a found note full size. The text uses an ordinary, anti-aliased system
  * font (the pixel font is too small to read a paragraph). Each note gets its
  * own wear matching what it is: oil, flood water, coal fingerprints, blood,
- * dust; note 7 is chalk on rock rather than paper.
+ * dust; note 8 is chalk on rock rather than paper.
  */
 final class NotePaper {
-    private static final int W = 440;
-    private static final int PAD = 24;
-    private static final int LINE = 19;
+    private static final int W = 420;
+    private static final int PAD = 20;
+    private static final int LINE = 16;
     /** The roster is a list of names, each ringed in red, so its lines sit further apart. */
-    private static final int ROSTER_LINE = 26;
+    private static final int ROSTER_LINE = 22;
     /** Empty band under the text where the heavy stains go, so they never cover a word. */
     private static final int STAIN_BAND = 40;
-    private static final Font FONT = pickFont(Font.PLAIN, 14);
+    /** Tahoma is hinted for small sizes with no smoothing: crisp pixels that still read well. */
+    private static final Font FONT = pickFont(Font.PLAIN, 12);
 
     /** What happened to this piece of paper. */
     private record Wear(boolean coal, boolean oil, boolean water, boolean ring, boolean blood, boolean creases,
                         boolean tornTop, boolean chalkOnRock, boolean roster) {
     }
 
+    /** Notes are in story order: each one about a rule turns up from the shift that rule starts in. */
     private static Wear wearFor(int note) {
         return switch (note) {
             case 1 -> new Wear(true, false, false, false, false, true, false, false, false);  // foreman's notebook
-            case 2 -> new Wear(false, false, false, true, false, true, true, false, false);   // torn calendar page
-            case 3 -> new Wear(true, true, false, false, false, false, false, false, false);  // maintenance log
-            case 4 -> new Wear(true, true, false, false, true, true, false, false, false);    // oily scrap
-            case 5 -> new Wear(false, false, false, true, false, true, false, false, false);  // unsent letter
-            case 6 -> new Wear(false, false, true, false, false, true, false, false, false);  // flood report
-            case 7 -> new Wear(false, false, false, false, false, false, false, true, false); // chalk on the wall
-            case 8 -> new Wear(true, false, false, false, true, false, false, false, false);  // tape label
+            case 2 -> new Wear(false, false, false, true, false, true, false, false, false);  // unsent letter
+            case 3 -> new Wear(false, false, false, true, false, true, true, false, false);   // torn calendar page
+            case 4 -> new Wear(false, false, true, false, false, true, false, false, false);  // flood report
+            case 5 -> new Wear(true, true, false, false, false, false, false, false, false);  // maintenance log
+            case 6 -> new Wear(true, false, false, false, true, false, false, false, false);  // tape label
+            case 7 -> new Wear(true, true, false, false, true, true, false, false, false);    // oily scrap
+            case 8 -> new Wear(false, false, false, false, false, false, false, true, false); // chalk on the wall
             case 9 -> new Wear(false, false, true, false, true, true, false, false, true);   // day-crew roster
             default -> new Wear(true, false, false, false, true, true, true, false, false);   // your own handwriting
         };
     }
 
     private static Font pickFont(int style, int size) {
-        String[] wanted = {"Segoe UI", "Tahoma", "Arial"};
+        String[] wanted = {"Tahoma", "Verdana", "Segoe UI", "Arial"};
         String[] have = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
         for (String w : wanted) for (String h : have) if (h.equals(w)) return new Font(w, style, size);
         return new Font(Font.DIALOG, style, size);
@@ -56,9 +58,10 @@ final class NotePaper {
         Wear wear = wearFor(note);
         Rng rng = new Rng(note * 7919L);
         Graphics2D p = (Graphics2D) g.create();
-        p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        p.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        p.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        // drawn into the game's pixel layer like everything else: hard edges, no smoothing
+        p.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        p.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        p.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
 
         p.setColor(new Color(0, 0, 0, 175));
         p.fillRect(0, 0, Window.WIDTH, Window.HEIGHT);
@@ -260,18 +263,29 @@ final class NotePaper {
         p.fill(s);
     }
 
+    /**
+     * A sooty thumb pressed on the paper, pixel by pixel: broken curved ridges inside an oval,
+     * heavy where the thumb pressed and fading off one side where it rolled away.
+     */
     private static void fingerprint(Graphics2D p, int x, int y, Rng rng) {
-        double tilt = rng.range(-0.6, 0.6);
-        Graphics2D f = (Graphics2D) p.create();
-        f.rotate(tilt, x + 10, y + 13);
-        f.setStroke(new BasicStroke(1.1f));
-        for (int i = 0; i < 6; i++) {
-            f.setColor(new Color(30, 26, 24, 90 - i * 10));
-            f.draw(new Ellipse2D.Double(x + i * 1.5, y + i * 2, 20 - i * 3, 26 - i * 4));
+        int w = 15, h = 19;
+        double cx = w / 2.0, cy = h / 2.0 + rng.range(-1.0, 1.0), tilt = rng.range(-0.5, 0.5);
+        double fadeDir = rng.chance(0.5) ? 1 : -1;
+        for (int py = 0; py < h; py++) {
+            for (int px = 0; px < w; px++) {
+                double dx = (px - cx) / (w / 2.0), dy = (py - cy) / (h / 2.0);
+                double rx = dx * Math.cos(tilt) - dy * Math.sin(tilt), ry = dx * Math.sin(tilt) + dy * Math.cos(tilt);
+                double r = Math.sqrt(rx * rx + ry * ry * 0.8);
+                if (r > 1) continue;
+                // ridges: rings, pinched into a loop near the top
+                double ridge = r * 8.5 + Math.max(0, -ry) * 2 + rng.range(-0.2, 0.2);
+                if (((int) ridge & 1) == 1) continue;
+                double press = (1 - r) * (0.6 + 0.4 * fadeDir * rx);
+                if (rng.chance(0.15) || press <= 0.05) continue;
+                p.setColor(new Color(34, 28, 24, (int) Math.min(170, 60 + press * 160)));
+                p.fillRect(x + px, y + py, 1, 1);
+            }
         }
-        f.setColor(new Color(30, 26, 24, 40));
-        f.fill(new Ellipse2D.Double(x - 2, y - 2, 24, 30));
-        f.dispose();
     }
 
     private static void bloodSpeckles(Graphics2D p, int x, int y, int h, Rng rng) {
