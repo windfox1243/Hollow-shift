@@ -148,7 +148,7 @@ Cách làm:
   - Đồ lớn đứng thành dãy ngắn sát tường và chắn ô của nó (ô `PROP`); mỗi món đều được kiểm tra không chặn mất lối đi nào.
   - Đồ vụn chủ yếu nằm dọc tường và cạnh đồ lớn, giữa phòng để thoáng; mạng nhện ở góc.
 - Mỗi phòng có tên sơn qua khuôn thẳng lên vách bắc, gần lối vào nhất (KHO 3, XƯỞNG 2, NHÀ NGHỈ TỔ B, MIẾU 1, LÒ 4, BỂ NƯỚC 2, GIẾNG THANG 9): sơn đỏ ô-xít đã phai, bong tróc, có vệt chảy; giếng thang là chữ đen trên dải vàng an toàn. Biển miếu bị cào, biển bể nước dính bùn.
-- Khoảng một nửa số phòng có một dòng viết vội bằng than (đa số) hoặc phấn trên vách, chọn theo chủ đề phòng, không lặp trong một map. Không nhặt được, không vào sổ.
+- Khoảng một nửa số phòng có một dòng viết vội bằng phấn (đa số, có bóng tối 1 pixel cho dễ đọc) hoặc than trên vách, chọn theo chủ đề phòng, không lặp trong một map. Không nhặt được, không vào sổ.
 - Chữ là một phần của pixel art (`engine.gfx.Weathered`): vẽ 1:1 không khử răng cưa bằng font của game rồi làm cũ đi, nên chịu ánh sáng và bóng tối như mọi thứ khác. Chữ chỉ đặt ở đoạn vách đá đủ dài, không tràn ra cửa hay lên thùng. Test kiểm tra mọi template giữ cửa thông và mọi marker đều tới được.
 - Cùng seed thì ra cùng map: endless dùng seed người chơi nhập, story đổi seed mỗi lần thử.
 
