@@ -438,7 +438,7 @@ public final class WorldBuilder {
                 if (sign != null && Math.hypot(sign[0] - x, sign[1] - y) < 48 || !clear(taken, x, y, 20)
                         || !fitsOnWall(map, t[0], t[1], Weathered.width(line))) continue;
                 used.add(line);
-                world.add(new Scrawl(x, y, line, rng.chance(0.3), rng.range(-2, 3)));
+                world.add(new Scrawl(x, y, line, rng.chance(0.7), rng.range(-2, 3)));
                 taken.add(new double[]{x, y});
                 want--;
                 break;

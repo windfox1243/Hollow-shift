@@ -27,7 +27,7 @@ public final class Weathered {
         Font font = Text.font(8, text);
         BufferedImage im = raster(text, font, paint, 2, 1, 0, seed);
         Rng rng = new Rng(seed);
-        flake(im, rng, 0.15);
+        flake(im, rng, 0.1);
         drips(im, rng, new Color(paint.getRed(), paint.getGreen(), paint.getBlue(), paint.getAlpha() / 2));
         return im;
     }
@@ -35,9 +35,25 @@ public final class Weathered {
     /** Chalk or coal handwriting: each letter a little off the line, strokes broken. */
     public static BufferedImage scrawl(String text, Color stroke, long seed) {
         Font font = Text.font(8, text);
-        BufferedImage im = raster(text, font, stroke, 2, 1, 1, seed);
-        flake(im, new Rng(seed * 31 + 7), 0.2);
-        return im;
+        // the pixel font (English) has one-pixel strokes: shifting its letters makes them unreadable
+        int wobble = font.getSize() <= 8 ? 0 : 1;
+        BufferedImage im = raster(text, font, stroke, 2, 1, wobble, seed);
+        flake(im, new Rng(seed * 31 + 7), 0.1);
+        // pale chalk on pale brick: a one-pixel dark shadow (as the HUD text has) keeps it legible
+        boolean pale = stroke.getRed() + stroke.getGreen() + stroke.getBlue() > 384;
+        return pale ? shadowed(im, new Color(10, 8, 8, 170)) : im;
+    }
+
+    /** A copy one pixel larger with a dark shadow under and to the right of every stroke. */
+    private static BufferedImage shadowed(BufferedImage im, Color shadow) {
+        BufferedImage out = new BufferedImage(im.getWidth() + 1, im.getHeight() + 1, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < im.getHeight(); y++)
+            for (int x = 0; x < im.getWidth(); x++)
+                if ((im.getRGB(x, y) >>> 24) != 0) out.setRGB(x + 1, y + 1, shadow.getRGB());
+        Graphics2D g = out.createGraphics();
+        g.drawImage(im, 0, 0, null);
+        g.dispose();
+        return out;
     }
 
     /** Draws text letter by letter with no anti-aliasing; wobble moves letters up or down a pixel. */
