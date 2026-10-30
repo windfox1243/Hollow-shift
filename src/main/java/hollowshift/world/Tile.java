@@ -7,7 +7,9 @@ public enum Tile {
     FLOOR(false, false, false, '.'),
     MOSS(false, false, true, ','),
     PLANK(false, false, false, '='),
-    CRATE(true, false, false, 'x');
+    CRATE(true, false, false, 'x'),
+    /** Floor under a heavy prop (cart, barrel, shelf...): blocks movement, not sight. The prop draws itself. */
+    PROP(true, false, false, '.');
 
     public final boolean solid;
     public final boolean opaque;

@@ -243,16 +243,23 @@ public final class WorldBuilder {
         }
     }
 
-    /** Heavy things the last crew left against the walls. */
-    private static final String[] WALL_PROPS = {"decor_minecart", "decor_shelf", "decor_table", "decor_bookcase", "decor_barrel",
-            "decor_barrel", "decor_chest", "decor_anvil", "decor_stove", "decor_sack", "decor_sack", "decor_grave", "decor_cross", "crate"};
-    /** Small things dropped on the floor. */
-    private static final String[] FLOOR_PROPS = {"decor_bones", "decor_bones", "decor_rubble_0", "decor_rubble_1", "decor_rubble_2",
-            "decor_rubble_3", "decor_bottle", "decor_vial", "decor_hammer", "decor_axe", "decor_pick", "decor_pick", "decor_bucket", "decor_stool"};
+    /** Heavy things the last crew left against the walls. They block their tile. */
+    private static final String[] HEAVY_PROPS = {"decor_minecart", "decor_tipped", "decor_shelf", "decor_table", "decor_bookcase",
+            "decor_barrel", "decor_drum", "decor_drum", "decor_chest", "decor_chest_open", "decor_chest_iron", "decor_anvil",
+            "decor_stove", "decor_sack", "decor_sandbags", "decor_coal", "decor_tnt", "decor_lockers", "decor_spool",
+            "decor_wheelbarrow", "decor_toolrack", "decor_beam", "decor_beam", "decor_fence", "decor_grave", "decor_cross", "crate"};
+    /** Small things dropped on the floor. They lie flat and are walked over. */
+    private static final String[] FLAT_PROPS = {"decor_bones", "decor_bones", "decor_rubble_0", "decor_rubble_1", "decor_rubble_2",
+            "decor_rubble_3", "decor_bottle", "decor_vial", "decor_vial_green", "decor_flask", "decor_hammer", "decor_axe",
+            "decor_axe_long", "decor_pick", "decor_bucket", "decor_stool", "decor_helmet", "decor_helmet", "decor_boots",
+            "decor_tin", "decor_rope", "decor_coalbits_0", "decor_coalbits_1", "decor_chain", "decor_puddle_0", "decor_puddle_1",
+            "decor_shrooms", "decor_shrooms", "decor_lantern", "decor_papers", "decor_rail", "decor_shovel", "decor_bolts",
+            "decor_candle", "decor_stain_0", "decor_stain_1", "decor_stain_2"};
 
     /**
-     * Five to eight props per room: heavy ones along the walls, small ones on the floor and
-     * cobwebs in the corners. They never block a path and keep clear of everything usable.
+     * Every room gets two to four heavy props against its walls, cobwebs in its corners and
+     * plenty of clutter on the floor. Heavy props block their tile, so each one is checked
+     * not to cut off any part of the map; everything keeps clear of things you can use.
      */
     private static void decorate(World world, WorldGenerator.Level level, Rng rng, Marker playerSpot) {
         TileMap map = level.map();
@@ -271,36 +278,80 @@ public final class WorldBuilder {
                 if (Math.abs(lx - mid) <= 1 && (ly <= 2 || ly >= c - 3) || Math.abs(ly - mid) <= 1 && (lx <= 2 || lx >= c - 3)) continue;
                 int cell = ty / c * level.cellsW() + tx / c;
                 int solids = 0;
-                boolean north = map.solid(tx, ty - 1);
                 for (int d = 0; d < 4; d++) if (map.solid(tx + dx[d], ty + dy[d])) solids++;
-                Map<Integer, List<int[]>> into = solids >= 2 ? corners : solids == 1 && north ? walls : solids == 0 ? floors : null;
+                Map<Integer, List<int[]>> into = solids >= 2 ? corners : solids == 1 && map.get(tx, ty) == Tile.FLOOR ? walls : solids == 0 ? floors : null;
                 if (into != null) into.computeIfAbsent(cell, k -> new ArrayList<>()).add(new int[]{tx, ty});
             }
         }
+        int start = TileMap.toTile(playerSpot.x()) + TileMap.toTile(playerSpot.y()) * map.width;
+        int[] reachable = {flood(map, start)};
         for (int cell = 0; cell < level.depth().length; cell++) {
             if (level.depth()[cell] < 0) continue;
-            int want = rng.range(5, 9);
-            int heavy = rng.range(1, 4), webs = rng.range(0, 3);
-            want -= place(world, rng, taken, walls.get(cell), heavy, WALL_PROPS);
-            want -= place(world, rng, taken, corners.get(cell), webs, new String[]{"decor_web"});
-            place(world, rng, taken, floors.get(cell), Math.max(0, want), FLOOR_PROPS);
+            placeHeavy(world, map, rng, taken, walls.get(cell), rng.range(2, 5), start, reachable);
+            placeFlat(world, rng, taken, corners.get(cell), rng.range(0, 3), new String[]{"decor_web"}, false);
+            placeFlat(world, rng, taken, floors.get(cell), rng.range(5, 10), FLAT_PROPS, true);
         }
     }
 
-    private static int place(World world, Rng rng, List<double[]> taken, List<int[]> spots, int count, String[] sprites) {
-        if (spots == null || count <= 0) return 0;
+    private static void placeHeavy(World world, TileMap map, Rng rng, List<double[]> taken, List<int[]> spots, int count,
+                                   int start, int[] reachable) {
+        if (spots == null) return;
         List<int[]> pool = new ArrayList<>(spots);
         rng.shuffle(pool);
         int placed = 0;
         for (int[] t : pool) {
             if (placed >= count) break;
-            double x = TileMap.center(t[0]) + rng.range(-3, 3), y = TileMap.center(t[1]) + rng.range(-2, 2);
-            if (!clear(taken, x, y, 22)) continue;
-            world.add(new Decor(x, y, sprites[rng.range(0, sprites.length)]));
+            double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+            if (!clear(taken, x, y, 24)) continue;
+            map.set(t[0], t[1], Tile.PROP);
+            // never wall off a tile: everything that was reachable must stay reachable
+            if (flood(map, start) != reachable[0] - 1) {
+                map.set(t[0], t[1], Tile.FLOOR);
+                continue;
+            }
+            reachable[0]--;
+            world.add(new Decor(x, y, HEAVY_PROPS[rng.range(0, HEAVY_PROPS.length)], false, rng.chance(0.5)));
             taken.add(new double[]{x, y});
             placed++;
         }
-        return placed;
+    }
+
+    private static void placeFlat(World world, Rng rng, List<double[]> taken, List<int[]> spots, int count, String[] sprites, boolean jitter) {
+        if (spots == null) return;
+        List<int[]> pool = new ArrayList<>(spots);
+        rng.shuffle(pool);
+        int placed = 0;
+        for (int[] t : pool) {
+            if (placed >= count) break;
+            double x = TileMap.center(t[0]) + (jitter ? rng.range(-4, 4) : 0), y = TileMap.center(t[1]) + (jitter ? rng.range(-3, 3) : 0);
+            if (!clear(taken, x, y, 18)) continue;
+            world.add(new Decor(x, y, sprites[rng.range(0, sprites.length)], true, rng.chance(0.5)));
+            taken.add(new double[]{x, y});
+            placed++;
+        }
+    }
+
+    /** Number of open tiles reachable from tile index start. */
+    private static int flood(TileMap map, int start) {
+        boolean[] seen = new boolean[map.width * map.height];
+        int[] queue = new int[map.width * map.height];
+        int head = 0, tail = 0, count = 0;
+        queue[tail++] = start;
+        seen[start] = true;
+        while (head < tail) {
+            int i = queue[head++];
+            count++;
+            int x = i % map.width, y = i / map.width;
+            int[] next = {i - 1, i + 1, i - map.width, i + map.width};
+            boolean[] ok = {x > 0, x < map.width - 1, y > 0, y < map.height - 1};
+            for (int k = 0; k < 4; k++) {
+                if (!ok[k] || seen[next[k]]) continue;
+                if (map.solid(next[k] % map.width, next[k] / map.width)) continue;
+                seen[next[k]] = true;
+                queue[tail++] = next[k];
+            }
+        }
+        return count;
     }
 
     private static boolean clear(List<double[]> taken, double x, double y, double gap) {

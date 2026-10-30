@@ -37,5 +37,11 @@
   "decor_bottle": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 144, "tint": "#b8aca0"},
   "decor_hammer": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 144, "y": 144, "tint": "#b8aca0"},
   "decor_axe": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 160, "y": 144, "tint": "#b8aca0"},
-  "decor_vial": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 160, "tint": "#b8aca0"}
+  "decor_vial": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 160, "tint": "#b8aca0"},
+  "decor_chest_open": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 112, "tint": "#b8aca0"},
+  "decor_chest_iron": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 112, "y": 112, "tint": "#b8aca0"},
+  "decor_fence": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 112, "y": 80, "tint": "#b8aca0"},
+  "decor_flask": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 144, "tint": "#b8aca0"},
+  "decor_vial_green": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 160, "tint": "#b8aca0"},
+  "decor_axe_long": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 176, "y": 144, "tint": "#b8aca0"}
 }

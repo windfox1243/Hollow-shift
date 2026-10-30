@@ -119,7 +119,7 @@ public final class TileMap {
                 String sprite = switch (t) {
                     case VOID -> null;
                     case WALL -> !get(tx, ty + 1).opaque ? "tile_wall_face_" + (v & 1) : "tile_wall_" + (v & 1);
-                    case FLOOR, CRATE -> "tile_floor_" + v;
+                    case FLOOR, CRATE, PROP -> "tile_floor_" + v;
                     case MOSS -> "tile_moss_" + (v & 1);
                     case PLANK -> "tile_plank_" + (v & 1);
                 };

@@ -49,6 +49,31 @@ final class ProceduralArt {
             case "decor_rubble" -> rubble(variant);
             case "decor_web" -> web();
             case "decor_pick" -> pick();
+            case "decor_drum" -> drum();
+            case "decor_beam" -> beam();
+            case "decor_sandbags" -> sandbags();
+            case "decor_coal" -> coalHeap();
+            case "decor_tnt" -> tnt();
+            case "decor_lockers" -> lockers();
+            case "decor_spool" -> spool();
+            case "decor_wheelbarrow" -> wheelbarrow();
+            case "decor_toolrack" -> toolRack();
+            case "decor_tipped" -> tippedCart();
+            case "decor_helmet" -> helmet();
+            case "decor_boots" -> boots();
+            case "decor_tin" -> tin();
+            case "decor_rope" -> rope();
+            case "decor_coalbits" -> coalBits(variant);
+            case "decor_chain" -> chain();
+            case "decor_puddle" -> puddle(variant);
+            case "decor_shrooms" -> shrooms();
+            case "decor_lantern" -> brokenLantern();
+            case "decor_papers" -> papers();
+            case "decor_rail" -> rail();
+            case "decor_shovel" -> shovel();
+            case "decor_bolts" -> bolts();
+            case "decor_candle" -> candle();
+            case "decor_stain" -> stain(variant);
             default -> missing();
         };
     }
@@ -595,6 +620,407 @@ final class ProceduralArt {
         g.drawLine(10, 8, 11, 11);
         g.setColor(OUTLINE);
         g.fillRect(4, 14, 4, 2);
+        g.dispose();
+        return im;
+    }
+
+    // ---- props: heavy ones stand on a blocked tile (16x16), clutter lies flat --------------------
+
+    private static Graphics2D pen(BufferedImage im) {
+        return im.createGraphics();
+    }
+
+    /** A rusty oil drum with hoops. */
+    private BufferedImage drum() {
+        BufferedImage im = img(14, 16);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillRect(1, 1, 12, 15);
+        Color rust = new Color(120, 62, 38);
+        g.setColor(rust);
+        g.fillRect(2, 2, 10, 13);
+        g.setColor(shade(rust, 30));
+        g.fillRect(3, 2, 2, 13);
+        g.setColor(new Color(70, 44, 32));
+        g.drawLine(2, 6, 11, 6);
+        g.drawLine(2, 11, 11, 11);
+        g.setColor(new Color(150, 90, 50));
+        g.fillOval(3, 1, 8, 3);
+        g.dispose();
+        return im;
+    }
+
+    /** A timber prop holding up the roof, with a cross brace. */
+    private BufferedImage beam() {
+        BufferedImage im = img(12, 16);
+        Graphics2D g = pen(im);
+        Color wood = new Color(96, 70, 44);
+        g.setColor(OUTLINE);
+        g.fillRect(3, 0, 6, 16);
+        g.setColor(wood);
+        g.fillRect(4, 0, 4, 16);
+        g.setColor(shade(wood, 20));
+        g.drawLine(4, 0, 4, 15);
+        g.setColor(OUTLINE);
+        g.fillRect(0, 2, 12, 3);
+        g.setColor(shade(wood, -10));
+        g.fillRect(1, 3, 10, 1);
+        g.setColor(new Color(150, 150, 160));
+        g.fillRect(5, 8, 2, 1);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage sandbags() {
+        BufferedImage im = img(16, 12);
+        Graphics2D g = pen(im);
+        Color bag = new Color(150, 130, 96);
+        int[][] bags = {{0, 6}, {5, 6}, {10, 6}, {2, 1}, {8, 1}};
+        for (int[] b : bags) {
+            g.setColor(OUTLINE);
+            g.fillRoundRect(b[0], b[1], 7, 6, 3, 3);
+            g.setColor(bag);
+            g.fillRoundRect(b[0] + 1, b[1], 5, 5, 3, 3);
+            g.setColor(shade(bag, 25));
+            g.drawLine(b[0] + 2, b[1] + 1, b[0] + 4, b[1] + 1);
+        }
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage coalHeap() {
+        BufferedImage im = img(16, 10);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillOval(0, 2, 16, 9);
+        g.setColor(new Color(34, 32, 36));
+        g.fillOval(1, 2, 14, 7);
+        Random r = new Random(5);
+        for (int i = 0; i < 14; i++) {
+            g.setColor(new Color(70, 70, 80));
+            g.fillRect(2 + r.nextInt(11), 3 + r.nextInt(5), 1, 1);
+        }
+        g.dispose();
+        return im;
+    }
+
+    /** A crate stencilled with a red warning: blasting charges. */
+    private BufferedImage tnt() {
+        BufferedImage im = img(14, 12);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillRect(0, 1, 14, 11);
+        g.setColor(new Color(110, 82, 50));
+        g.fillRect(1, 2, 12, 9);
+        g.setColor(new Color(170, 36, 30));
+        g.fillRect(3, 4, 8, 4);
+        g.setColor(new Color(230, 210, 170));
+        g.drawLine(4, 6, 9, 6);
+        g.setColor(new Color(170, 36, 30));
+        g.fillRect(10, 0, 2, 2);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage lockers() {
+        BufferedImage im = img(16, 16);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillRect(0, 0, 16, 16);
+        Color metal = new Color(74, 88, 84);
+        for (int i = 0; i < 3; i++) {
+            g.setColor(metal);
+            g.fillRect(1 + i * 5, 1, 4, 14);
+            g.setColor(shade(metal, -25));
+            for (int y = 3; y < 7; y += 2) g.drawLine(2 + i * 5, y, 3 + i * 5, y);
+            g.setColor(new Color(180, 180, 170));
+            g.fillRect(4 + i * 5, 8, 1, 2);
+        }
+        g.setColor(new Color(40, 46, 44));
+        g.fillRect(6, 1, 4, 14); // one door hangs open on darkness
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage spool() {
+        BufferedImage im = img(14, 14);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillOval(0, 0, 14, 14);
+        g.setColor(new Color(110, 80, 52));
+        g.fillOval(1, 1, 12, 12);
+        g.setColor(new Color(40, 40, 46));
+        g.fillOval(3, 3, 8, 8);
+        g.setColor(new Color(150, 60, 40));
+        for (int i = 4; i < 10; i += 2) g.drawArc(3, 3, 8, 8, i * 20, 140);
+        g.setColor(OUTLINE);
+        g.fillOval(6, 6, 2, 2);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage wheelbarrow() {
+        BufferedImage im = img(16, 12);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillPolygon(new int[]{1, 12, 10, 3}, new int[]{2, 2, 8, 8}, 4);
+        g.setColor(new Color(90, 100, 96));
+        g.fillPolygon(new int[]{2, 11, 9, 4}, new int[]{3, 3, 7, 7}, 4);
+        g.setColor(new Color(96, 70, 44));
+        g.drawLine(11, 4, 15, 9);
+        g.setColor(OUTLINE);
+        g.fillOval(3, 7, 5, 5);
+        g.setColor(new Color(60, 60, 66));
+        g.fillOval(4, 8, 3, 3);
+        g.dispose();
+        return im;
+    }
+
+    /** A rack with a shovel and a pick hung on it. */
+    private BufferedImage toolRack() {
+        BufferedImage im = img(16, 16);
+        Graphics2D g = pen(im);
+        Color wood = new Color(90, 66, 42);
+        g.setColor(OUTLINE);
+        g.fillRect(0, 2, 16, 3);
+        g.fillRect(1, 2, 2, 14);
+        g.fillRect(13, 2, 2, 14);
+        g.setColor(wood);
+        g.fillRect(1, 3, 14, 1);
+        g.setColor(new Color(110, 78, 50));
+        g.drawLine(5, 4, 5, 13);
+        g.drawLine(10, 4, 10, 14);
+        g.setColor(new Color(150, 150, 160));
+        g.fillRect(4, 12, 3, 3);
+        g.drawLine(8, 5, 12, 6);
+        g.dispose();
+        return im;
+    }
+
+    /** A mine cart on its side, ore spilled. */
+    private BufferedImage tippedCart() {
+        BufferedImage im = img(16, 14);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillPolygon(new int[]{1, 10, 13, 4}, new int[]{3, 0, 9, 12}, 4);
+        g.setColor(new Color(84, 90, 96));
+        g.fillPolygon(new int[]{2, 9, 12, 5}, new int[]{4, 1, 8, 11}, 4);
+        g.setColor(OUTLINE);
+        g.fillOval(0, 8, 4, 4);
+        g.fillOval(6, 10, 4, 4);
+        g.setColor(new Color(60, 56, 58));
+        for (int i = 0; i < 5; i++) g.fillRect(11 + i % 3, 10 + i / 3 * 2, 2, 2);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage helmet() {
+        BufferedImage im = img(10, 7);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillArc(0, 0, 10, 12, 0, 180);
+        g.fillRect(0, 5, 10, 2);
+        g.setColor(new Color(200, 160, 50));
+        g.fillArc(1, 1, 8, 10, 0, 180);
+        g.setColor(new Color(220, 220, 200));
+        g.fillRect(4, 1, 2, 2);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage boots() {
+        BufferedImage im = img(12, 7);
+        Graphics2D g = pen(im);
+        Color leather = new Color(70, 50, 36);
+        for (int b = 0; b < 2; b++) {
+            int x = b * 6;
+            g.setColor(OUTLINE);
+            g.fillRect(x, 0, 4, 7);
+            g.fillRect(x, 4, 6, 3);
+            g.setColor(leather);
+            g.fillRect(x + 1, 1, 2, 5);
+            g.fillRect(x + 1, 5, 4, 1);
+        }
+        g.dispose();
+        return im;
+    }
+
+    /** A dented lunch tin, lid open. */
+    private BufferedImage tin() {
+        BufferedImage im = img(10, 7);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillRect(0, 2, 10, 5);
+        g.setColor(new Color(120, 126, 130));
+        g.fillRect(1, 3, 8, 3);
+        g.setColor(OUTLINE);
+        g.drawLine(1, 2, 3, 0);
+        g.drawLine(3, 0, 9, 0);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage rope() {
+        BufferedImage im = img(11, 7);
+        Graphics2D g = pen(im);
+        g.setColor(new Color(150, 124, 80));
+        g.drawOval(0, 0, 10, 6);
+        g.drawOval(2, 1, 6, 4);
+        g.setColor(new Color(110, 90, 58));
+        g.drawOval(1, 1, 8, 5);
+        g.drawLine(9, 4, 10, 6);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage coalBits(int v) {
+        BufferedImage im = img(12, 6);
+        Random r = new Random(v * 17L + 3);
+        Graphics2D g = pen(im);
+        for (int i = 0; i < 6; i++) {
+            int x = r.nextInt(10), y = r.nextInt(4);
+            g.setColor(new Color(28, 26, 30));
+            g.fillRect(x, y, 2, 2);
+            g.setColor(new Color(80, 80, 90));
+            g.fillRect(x, y, 1, 1);
+        }
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage chain() {
+        BufferedImage im = img(14, 6);
+        Graphics2D g = pen(im);
+        for (int i = 0; i < 5; i++) {
+            g.setColor(new Color(110, 110, 118));
+            g.drawOval(i * 3 - 1, (i % 2) * 2, 4, 3);
+        }
+        g.dispose();
+        return im;
+    }
+
+    /** Standing water, a faint sheen. */
+    private BufferedImage puddle(int v) {
+        BufferedImage im = img(16, 8);
+        Graphics2D g = pen(im);
+        g.setColor(new Color(20, 26, 34, 200));
+        g.fillOval(v % 2 == 0 ? 0 : 2, 1, 14, 7);
+        g.fillOval(v % 2 == 0 ? 6 : 0, 0, 9, 5);
+        g.setColor(new Color(110, 130, 150, 120));
+        g.drawLine(4, 3, 7, 3);
+        g.dispose();
+        return im;
+    }
+
+    /** Pale cave mushrooms. */
+    private BufferedImage shrooms() {
+        BufferedImage im = img(10, 8);
+        Graphics2D g = pen(im);
+        int[][] caps = {{0, 3, 4}, {4, 0, 5}, {7, 4, 3}};
+        for (int[] c : caps) {
+            g.setColor(new Color(200, 196, 180));
+            g.fillRect(c[0] + c[2] / 2, c[1] + 2, 1, 8 - c[1] - 2);
+            g.setColor(OUTLINE);
+            g.fillArc(c[0], c[1], c[2] + 1, 4, 0, 180);
+            g.setColor(new Color(170, 190, 160));
+            g.fillArc(c[0], c[1] + 1, c[2], 3, 0, 180);
+        }
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage brokenLantern() {
+        BufferedImage im = img(10, 8);
+        Graphics2D g = pen(im);
+        g.setColor(OUTLINE);
+        g.fillRect(1, 1, 8, 6);
+        g.setColor(new Color(80, 74, 66));
+        g.fillRect(2, 2, 6, 4);
+        g.setColor(new Color(170, 170, 150, 160));
+        g.drawLine(3, 3, 5, 5);
+        g.setColor(new Color(150, 140, 120));
+        g.fillRect(8, 0, 2, 1);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage papers() {
+        BufferedImage im = img(14, 8);
+        Graphics2D g = pen(im);
+        g.setColor(new Color(180, 170, 140));
+        g.fillPolygon(new int[]{0, 7, 8, 1}, new int[]{2, 0, 5, 7}, 4);
+        g.setColor(new Color(160, 150, 120));
+        g.fillPolygon(new int[]{6, 13, 12, 6}, new int[]{3, 2, 7, 8}, 4);
+        g.setColor(new Color(90, 80, 70));
+        g.drawLine(2, 3, 5, 2);
+        g.drawLine(8, 4, 11, 4);
+        g.dispose();
+        return im;
+    }
+
+    /** A loose length of rail with two sleepers. */
+    private BufferedImage rail() {
+        BufferedImage im = img(16, 6);
+        Graphics2D g = pen(im);
+        g.setColor(new Color(80, 58, 38));
+        g.fillRect(3, 0, 3, 6);
+        g.fillRect(11, 0, 3, 6);
+        g.setColor(new Color(120, 120, 128));
+        g.fillRect(0, 1, 16, 1);
+        g.fillRect(0, 4, 16, 1);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage shovel() {
+        BufferedImage im = img(14, 6);
+        Graphics2D g = pen(im);
+        g.setColor(new Color(100, 74, 46));
+        g.drawLine(0, 1, 9, 3);
+        g.setColor(OUTLINE);
+        g.fillRect(9, 1, 5, 5);
+        g.setColor(new Color(130, 130, 136));
+        g.fillRect(10, 2, 3, 3);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage bolts() {
+        BufferedImage im = img(10, 5);
+        Random r = new Random(9);
+        Graphics2D g = pen(im);
+        for (int i = 0; i < 7; i++) {
+            g.setColor(new Color(150, 146, 140));
+            int x = r.nextInt(9), y = r.nextInt(4);
+            g.fillRect(x, y, 1, 1);
+            g.setColor(new Color(90, 88, 84));
+            g.fillRect(x + 1, y, 1, 1);
+        }
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage candle() {
+        BufferedImage im = img(6, 7);
+        Graphics2D g = pen(im);
+        g.setColor(new Color(200, 196, 170));
+        g.fillOval(0, 4, 6, 3);
+        g.fillRect(2, 2, 2, 4);
+        g.setColor(OUTLINE);
+        g.fillRect(2, 1, 1, 1);
+        g.dispose();
+        return im;
+    }
+
+    /** An old dark stain on the floor. */
+    private BufferedImage stain(int v) {
+        BufferedImage im = img(16, 9);
+        Random r = new Random(v * 11L + 1);
+        Graphics2D g = pen(im);
+        Color c = v % 2 == 0 ? new Color(60, 14, 14, 150) : new Color(28, 24, 20, 150);
+        g.setColor(c);
+        g.fillOval(2, 2, 11, 6);
+        for (int i = 0; i < 5; i++) g.fillOval(r.nextInt(14), r.nextInt(7), 2, 2);
         g.dispose();
         return im;
     }

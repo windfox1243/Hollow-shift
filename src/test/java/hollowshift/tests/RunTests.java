@@ -57,6 +57,7 @@ public final class RunTests {
         test("each run draws its own mix of jobs, placed in the map", RunTests::jobVariety);
         test("CONSUME: a wall nest wakes the Tenant and brings it", RunTests::nestSummons);
         test("CONSUME: flesh knots lie in wait beside useful things", RunTests::knotsAsBait);
+        test("props: heavy ones block their tile but never a path, clutter lies flat", RunTests::props);
         test("COLD: the dark freezes faster than lantern light", RunTests::coldDark);
         test("a note picked up is kept in the journal", RunTests::notesKept);
         test("the lantern drains in every shift, faster under BATTERY", RunTests::lanternDrains);
@@ -643,6 +644,31 @@ public final class RunTests {
         check(p.trappedBy() != null, "setup: the nest should catch the player");
         check(!c.isDormant(), "a nest should wake the Tenant");
         check(c.state() instanceof hollowshift.ai.EchoState, "far away, it should come through the rock, state " + c.state().name());
+    }
+
+    private static void props() {
+        Campaign camp = Campaign.load();
+        for (int n = 1; n <= camp.shifts().size(); n++) {
+            for (long seed = 1; seed <= 6; seed++) {
+                World w = WorldBuilder.build(services(), camp.shift(n), seed * 37 + n);
+                Player p = (Player) w.pendingEntities().stream().filter(e -> e instanceof Player).findFirst().orElseThrow();
+                boolean[] seen = flood(w.map, TileMap.toTile(p.x), TileMap.toTile(p.y));
+                for (int y = 0; y < w.map.height; y++)
+                    for (int x = 0; x < w.map.width; x++)
+                        if (!w.map.solid(x, y)) check(seen[y * w.map.width + x], "shift " + n + " seed " + seed + ": a prop cut off tile " + x + "," + y);
+                for (hollowshift.entity.Entity e : w.pendingEntities()) {
+                    if (!(e instanceof Decor d)) continue;
+                    if (d.isFlat()) check(d.sortY() < d.y - 16, "clutter should be drawn under anyone standing on it");
+                    else check(w.map.get(TileMap.toTile(d.x), TileMap.toTile(d.y)) == Tile.PROP, "a heavy prop should block its tile");
+                }
+                // nothing usable ends up stuck inside a prop
+                for (hollowshift.entity.Entity e : w.pendingEntities()) {
+                    if (e instanceof hollowshift.entity.Interactable && !(e instanceof Elevator)) {
+                        check(!w.map.solid(TileMap.toTile(e.x), TileMap.toTile(e.y)), e.getClass().getSimpleName() + " is inside a prop");
+                    }
+                }
+            }
+        }
     }
 
     private static void knotsAsBait() {
