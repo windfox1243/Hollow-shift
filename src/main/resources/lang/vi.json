@@ -201,5 +201,54 @@
   "prompt.fuel": "Đổ dầu vào máy (giữ phím)",
   "prompt.needsFuel": "Máy phát (cần một can dầu)",
   "prompt.phone": "Quay điện thoại (giữ phím)",
-  "item.fuel": "can dầu"
+  "item.fuel": "can dầu",
+  "sign.LIFT": "GIẾNG THANG 9",
+  "sign.STORAGE": "KHO {0}",
+  "sign.WORKSHOP": "XƯỞNG {0}",
+  "sign.QUARTERS": "NHÀ NGHỈ TỔ {0}",
+  "sign.SHRINE": "MIẾU {0}",
+  "sign.TUNNEL": "LÒ {0}",
+  "sign.FLOODED": "BỂ NƯỚC {0}",
+  "scrawl.LIFT": [
+    "về đi",
+    "đêm nay là đêm thứ mấy?",
+    "ĐỪNG LÊN"
+  ],
+  "scrawl.STORAGE": [
+    "kho trống từ tháng ba",
+    "ai lấy hết đồ hộp rồi?",
+    "đếm lại: 14 người",
+    "đừng mở thùng cuối"
+  ],
+  "scrawl.WORKSHOP": [
+    "máy kêu là nó tới",
+    "tắt máy trước khi về",
+    "đừng để đèn sáng",
+    "búa của Lộc"
+  ],
+  "scrawl.QUARTERS": [
+    "đừng ngủ ở đây",
+    "Tư ơi về đi",
+    "Lộc nằm giường 3",
+    "đêm qua có người gõ cửa",
+    "nhớ con"
+  ],
+  "scrawl.SHRINE": [
+    "xin cho con lên",
+    "nó không thích lửa?",
+    "14",
+    "trả tiền trọ rồi mà"
+  ],
+  "scrawl.TUNNEL": [
+    "đừng chạy",
+    "lò này sập năm 87",
+    "ĐI HƯỚNG KIA",
+    "|||| |||| ||",
+    "nó đi xuyên đá được"
+  ],
+  "scrawl.FLOODED": [
+    "nước lên là nó đến",
+    "đừng đi chân trần",
+    "có tiếng thở dưới nước"
+  ]
 }

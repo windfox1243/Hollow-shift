@@ -58,6 +58,7 @@ public final class RunTests {
         test("CONSUME: a wall nest wakes the Tenant and brings it", RunTests::nestSummons);
         test("CONSUME: flesh knots lie in wait beside useful things", RunTests::knotsAsBait);
         test("props: heavy ones block their tile but never a path, clutter lies flat", RunTests::props);
+        test("every room has its own sign; scrawls match the room and never repeat", RunTests::writing);
         test("COLD: the dark freezes faster than lantern light", RunTests::coldDark);
         test("a note picked up is kept in the journal", RunTests::notesKept);
         test("the lantern drains in every shift, faster under BATTERY", RunTests::lanternDrains);
@@ -665,6 +666,27 @@ public final class RunTests {
                 for (hollowshift.entity.Entity e : w.pendingEntities()) {
                     if (e instanceof hollowshift.entity.Interactable && !(e instanceof Elevator)) {
                         check(!w.map.solid(TileMap.toTile(e.x), TileMap.toTile(e.y)), e.getClass().getSimpleName() + " is inside a prop");
+                    }
+                }
+            }
+        }
+    }
+
+    private static void writing() {
+        Campaign camp = Campaign.load();
+        for (int n = 1; n <= camp.shifts().size(); n++) {
+            for (long seed = 1; seed <= 6; seed++) {
+                World w = WorldBuilder.build(services(), camp.shift(n), seed * 53 + n);
+                List<String> signs = w.pendingEntities().stream().filter(e -> e instanceof RoomSign).map(e -> ((RoomSign) e).text()).toList();
+                List<String> scrawls = w.pendingEntities().stream().filter(e -> e instanceof Scrawl).map(e -> ((Scrawl) e).text()).toList();
+                int rooms = (int) w.pendingEntities().stream().filter(e -> e instanceof RoomSign).count();
+                check(rooms >= 4, "shift " + n + " seed " + seed + ": only " + rooms + " signs");
+                check(new HashSet<>(signs).size() == signs.size(), "shift " + n + " seed " + seed + ": two rooms share a sign " + signs);
+                check(scrawls.size() >= 2, "shift " + n + " seed " + seed + ": too few scrawls");
+                check(new HashSet<>(scrawls).size() == scrawls.size(), "a scrawl repeats: " + scrawls);
+                for (hollowshift.entity.Entity e : w.pendingEntities()) {
+                    if (e instanceof RoomSign || e instanceof Scrawl) {
+                        check(w.map.solid(TileMap.toTile(e.x), TileMap.toTile(e.y) - 1), "writing should be on a wall");
                     }
                 }
             }

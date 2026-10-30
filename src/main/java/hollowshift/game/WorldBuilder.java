@@ -1,5 +1,6 @@
 package hollowshift.game;
 
+import hollowshift.engine.Lang;
 import hollowshift.engine.Rng;
 import hollowshift.engine.io.Resources;
 import hollowshift.entity.*;
@@ -143,6 +144,7 @@ public final class WorldBuilder {
             }
         }
         if (shift.rules().has(Rule.CONSUME)) placeGrowth(world, level, rng, playerSpot);
+        placeWriting(world, level, rng);
         decorate(world, level, rng, playerSpot);
         double[] spawn = openSpotInCell(level, far);
         Creature tenant = world.add(new Creature(spawn[0], spawn[1], shift.creatureSpeed()));
@@ -362,6 +364,83 @@ public final class WorldBuilder {
             placed++;
         }
         return placed;
+    }
+
+    /**
+     * A painted sign by the way into every room, named for what the room was ("STORE 3",
+     * "CREW ROOM B"), and scrawls on the walls of about half the rooms, matching the room.
+     */
+    private static void placeWriting(World world, WorldGenerator.Level level, Rng rng) {
+        TileMap map = level.map();
+        int c = WorldGenerator.CHUNK, mid = c / 2;
+        List<double[]> taken = new ArrayList<>();
+        for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
+        Map<RoomTheme, Integer> numbers = new EnumMap<>(RoomTheme.class);
+        Map<Integer, double[]> signs = new HashMap<>();
+        Map<Integer, List<int[]>> northWalls = new HashMap<>();
+        for (int ty = 1; ty < map.height; ty++) {
+            for (int tx = 0; tx < map.width; tx++) {
+                int lx = tx % c, ly = ty % c;
+                if (map.solid(tx, ty) || !map.solid(tx, ty - 1) || lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1) continue;
+                if (Math.abs(lx - mid) <= 1 && ly <= 2) continue; // not over the north doorway
+                northWalls.computeIfAbsent(ty / c * level.cellsW() + tx / c, k -> new ArrayList<>()).add(new int[]{tx, ty});
+            }
+        }
+        for (int cell = 0; cell < level.depth().length; cell++) {
+            if (level.depth()[cell] < 0 || !northWalls.containsKey(cell)) continue;
+            RoomTheme theme = RoomTheme.of(level.roomNames()[cell]);
+            double rcx = TileMap.center(cell % level.cellsW() * c + mid), rcy = TileMap.center(cell / level.cellsW() * c + mid);
+            List<double[]> doors = WorldGenerator.doorways(map, rcx, rcy);
+            // the spot on the north wall nearest a way in
+            double[] best = null;
+            double bestD = Double.MAX_VALUE;
+            for (int[] t : northWalls.get(cell)) {
+                double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+                if (!clear(taken, x, y, 20)) continue;
+                double d = Double.MAX_VALUE;
+                for (double[] dr : doors) d = Math.min(d, Math.hypot(dr[0] - x, dr[1] - y));
+                if (d < bestD) {
+                    bestD = d;
+                    best = new double[]{x, y};
+                }
+            }
+            if (best == null) continue;
+            // numbered like a real mine: crew rooms A, B, C...; the rest count up with a few gaps
+            int n = theme == RoomTheme.QUARTERS ? numbers.merge(theme, 1, Integer::sum)
+                    : numbers.merge(theme, rng.range(1, 4), (prev, step) -> prev + 1 + rng.range(0, 2));
+            String label = theme == RoomTheme.QUARTERS ? Lang.t("sign.QUARTERS", (char) ('A' + n - 1)) : Lang.t("sign." + theme.name(), n);
+            RoomSign.Damage damage = theme == RoomTheme.SHRINE ? RoomSign.Damage.CLAWED
+                    : theme == RoomTheme.FLOODED ? RoomSign.Damage.MUDDY : RoomSign.Damage.NONE;
+            world.add(new RoomSign(best[0], best[1], label, damage));
+            taken.add(best);
+            signs.put(cell, best);
+        }
+        // scrawls: never the same line twice in one map
+        List<Integer> rooms = new ArrayList<>(northWalls.keySet());
+        rooms.removeIf(cell -> level.depth()[cell] < 0);
+        rng.shuffle(rooms);
+        Set<String> used = new HashSet<>();
+        int want = Math.max(2, rooms.size() / 2);
+        for (int cell : rooms) {
+            if (want <= 0) break;
+            RoomTheme theme = RoomTheme.of(level.roomNames()[cell]);
+            List<String> lines = new ArrayList<>(Lang.list("scrawl." + theme.name()));
+            lines.removeAll(used);
+            if (lines.isEmpty()) continue;
+            List<int[]> spots = new ArrayList<>(northWalls.get(cell));
+            rng.shuffle(spots);
+            for (int[] t : spots) {
+                double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+                double[] sign = signs.get(cell);
+                if (sign != null && Math.hypot(sign[0] - x, sign[1] - y) < 48 || !clear(taken, x, y, 20)) continue;
+                String line = lines.get(rng.range(0, lines.size()));
+                used.add(line);
+                world.add(new Scrawl(x, y, line, rng.chance(0.6), (float) rng.range(-0.08, 0.08)));
+                taken.add(new double[]{x, y});
+                want--;
+                break;
+            }
+        }
     }
 
     /** Number of open tiles reachable from tile index start. */

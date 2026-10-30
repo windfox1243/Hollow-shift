@@ -201,5 +201,54 @@
   "prompt.fuel": "Pour in the fuel (hold)",
   "prompt.needsFuel": "Generator (needs a can of fuel)",
   "prompt.phone": "Crank the phone (hold)",
-  "item.fuel": "fuel can"
+  "item.fuel": "fuel can",
+  "sign.LIFT": "SHAFT 9",
+  "sign.STORAGE": "STORE {0}",
+  "sign.WORKSHOP": "WORKSHOP {0}",
+  "sign.QUARTERS": "CREW ROOM {0}",
+  "sign.SHRINE": "SHRINE {0}",
+  "sign.TUNNEL": "GALLERY {0}",
+  "sign.FLOODED": "SUMP {0}",
+  "scrawl.LIFT": [
+    "go home",
+    "which night is this?",
+    "DON'T GO UP"
+  ],
+  "scrawl.STORAGE": [
+    "empty since March",
+    "who took all the tins?",
+    "counted again: 14",
+    "don't open the last crate"
+  ],
+  "scrawl.WORKSHOP": [
+    "the engine calls it",
+    "shut it off before you leave",
+    "keep the lights low",
+    "Loc's hammer"
+  ],
+  "scrawl.QUARTERS": [
+    "don't sleep here",
+    "Tu, go home",
+    "Loc in bunk 3",
+    "someone knocked last night",
+    "miss you, son"
+  ],
+  "scrawl.SHRINE": [
+    "let me go up",
+    "it doesn't like fire?",
+    "14",
+    "we paid the rent"
+  ],
+  "scrawl.TUNNEL": [
+    "don't run",
+    "caved in 1987",
+    "THAT WAY",
+    "|||| |||| ||",
+    "it walks through rock"
+  ],
+  "scrawl.FLOODED": [
+    "water rises, it comes",
+    "keep your boots on",
+    "breathing under the water"
+  ]
 }
