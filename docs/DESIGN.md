@@ -17,7 +17,7 @@ Top-down survival horror, 640×360 pixel art, **100% Java SE** (Swing/Java2D + j
 | SIGHT | Tenant | `SightSense`: đường nhìn + độ sáng tại vị trí người chơi. Flare đang cháy làm mồi nhử |
 | HEARING | Tenant | `HearingSense`: nghe noise trong bán kính; ở dưới nửa bán kính thì đuổi |
 | SMELL | Tenant | `SmellSense`: đánh hơi theo chu kỳ, đoán vị trí có sai số; có âm báo |
-| TREMOR | Tenant | `TremorSense`: cảm nhận người chơi chạy trong vòng 320px, xuyên tường |
+| CONSUME | Tenant | `WallMaw`: tổ xúc tu trên vách, đứng sát là bị ghim vào tường, bấm E liên tục để giật ra (5 giây là bị nuốt); `FleshNode`: cục thịt dưới sàn, giẫm phải là nó biết chỗ bạn |
 | ECHO | Tenant | `EchoSense` + `EchoState`: tiếng động lớn kéo nó dịch chuyển tới |
 | HASTE | Tenant | Tốc độ tăng 7% mỗi phút (tối đa +50%) |
 | BATTERY | Bạn | `BatteryEffect`: đèn lồng hao pin, nhặt cell để sạc |
@@ -80,7 +80,7 @@ Không có luật giác quan nào thì Tenant chỉ đi lang thang, nhưng chạ
 - Hộp cầu chì có điện chỉ le lói, thang máy chỉ lóe một đốm, đèn lồng 88px.
 - Tenant:
   - xuất hiện ở phòng xa người chơi nhất (tính theo khoảng cách thật và độ sâu);
-  - **chưa có mặt trong 20–30 giây đầu** (ca cuối là 10 giây), chỉ báo hiệu bằng một tiếng động vọng từ xa khi nó tới;
+  - **chưa có mặt trong 10 giây đầu**, chỉ báo hiệu bằng một tiếng động vọng từ xa khi nó tới;
   - gần như không tự phát sáng;
   - mắt chỉ hiện khi ở trong 190px, và khi chưa đuổi thì chỉ thỉnh thoảng lóe lên.
 
@@ -103,7 +103,7 @@ Không có luật giác quan nào thì Tenant chỉ đi lang thang, nhưng chạ
 | Thính giác | bước chân 175, nhặt đồ 500; trong bán kính thì đến xem, trong nửa bán kính thì đuổi | đi bộ 130, chạy 230, nhặt đồ 375, cầu chì 340; cùng quy tắc |
 | Khứu giác | trong 1000px, đánh hơi mỗi d/120 giây (1–8s), dưới 300 thì đuổi | trong 750px, mỗi d/90 giây (1–8s), dưới 225 thì đuổi |
 | Bỏ cuộc | "aggro" khoảng 2s sau khi mất dấu | 2.5s, sau đó lục soát quanh điểm cuối |
-| Thêm | — | TREMOR, ECHO, HASTE, bị flare dụ, lục soát, ném đá trúng thì choáng |
+| Thêm | — | CONSUME, ECHO, HASTE, bị flare dụ, lục soát, ném đá trúng thì choáng |
 
 ## Jumpscare (bật/tắt trong Settings)
 Một nhịp tĩnh 0.14s (mặt ở xa trong bóng tối), rồi mặt giật vào màn hình. Có chớp trắng/đỏ, hàm há dần, ngón tay bám hai góc, lệch màu RGB, nhiễu và rách dòng quét, cuối cùng vỡ hình thành màu đen. Mặt quái trong cảnh hù là miệng hình vòng khổng lồ, có nhiều vòng răng lởm chởm xoáy vào cổ họng, xúc tu quất vào từ bốn góc. Âm thanh là `scare_main`, xem phần "Âm thanh rượt đuổi và cảnh hù".
@@ -133,12 +133,18 @@ Cách làm:
 - **Template Method**: `Objectives` dùng chung chuỗi thoát bằng thang máy.
 - **Data-driven**:
   - phòng ở `resources/chunks/rooms.txt`;
-  - ca cuối ở `resources/chunks/finale.txt`;
+  - ca cuối cũng được sinh ngẫu nhiên như các ca khác (cầu dao thay cho hộp cầu chì, thêm khe nứt của kết thúc ẩn);
   - chiến dịch, mẹo, đoạn kết ở `resources/levels.json`.
 
 ## Sinh map (`world.WorldGenerator`)
-- Dùng thuật toán growing tree trên lưới phòng, xuất phát từ phòng thang máy ở hàng trên cùng, rồi thêm cửa phụ để tạo vòng (trừ phòng start).
-- Mỗi phòng là một template 13×13, có thể lật X/Y. Generator bao tường và mở cửa 3 ô theo các cạnh nối. Test kiểm tra mọi template giữ cửa thông và mọi marker đều tới được.
+- Mọi phòng đều nằm trên một vòng, không có ngõ cụt (cầu chì trong ngõ cụt mà quái chặn cửa là chết chắc):
+  1. đặt khung vòng, chọn ngẫu nhiên: một vòng chữ O, hai vòng chung cạnh (số 8), vòng hành lang bao quanh một gian trung tâm có 2–4 nhánh nối vào, hoặc một vòng nhỏ 2×2 để mọc tự do;
+  2. mọc thêm phòng bằng các "tai" (ear): chuỗi 1–4 phòng mới nối vào bản đồ ở **cả hai đầu**, nên đồ thị luôn liên thông 2 cạnh;
+  3. thêm vài cửa tắt giữa các phòng kề nhau;
+  4. phòng thang máy là phòng cao nhất, gần giữa nhất.
+- Kích thước lưới mỗi ca được nới/xoay ngẫu nhiên theo seed, nên cùng một ca cũng có hình dạng khác nhau.
+- Mỗi phòng là một template 13×13, có thể lật X/Y và xoay (8 biến thể mỗi template). Generator bao tường và mở cửa 3 ô theo các cạnh nối.
+- Sau khi dựng phòng, `WorldBuilder` rải đồ trang trí (xe goòng, thùng, kệ, xương, đá vụn, mạng nhện…) dọc tường và trên sàn, tránh lối đi và đồ dùng được. Test kiểm tra mọi template giữ cửa thông và mọi marker đều tới được.
 - Cùng seed thì ra cùng map: endless dùng seed người chơi nhập, story đổi seed mỗi lần thử.
 
 ## Asset

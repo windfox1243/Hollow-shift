@@ -27,6 +27,12 @@ public abstract class Objectives {
     public void onLeverPulled() {
     }
 
+    public void onValveOpened() {
+    }
+
+    public void onKeyFound() {
+    }
+
     /** Whether the lift can be used. */
     public abstract boolean exitOpen();
 

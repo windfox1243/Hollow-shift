@@ -48,11 +48,13 @@ public final class Campaign {
                 Json.integer(m.get("cellsH"), 3),
                 Json.integer(m.get("rooms"), 5),
                 Json.integer(m.get("fuses"), 2),
-                Json.num(m.get("loopChance"), 0.25),
+                Json.num(m.get("loopChance"), 0.15),
                 Json.num(m.get("creatureSpeed"), 1.0),
                 rules,
                 Json.bool(m.get("finale"), false),
-                false);
+                false,
+                Json.integer(m.get("valves"), 0),
+                Json.bool(m.get("liftKey"), false));
     }
 
     public List<String> tips() {
@@ -63,15 +65,16 @@ public final class Campaign {
         return Lang.t("ending");
     }
 
-    /** Endless shifts grow in size, fuses, speed and number of rules. */
+    /** Endless shifts grow in size, jobs, speed and number of rules. */
     public ShiftDef endless(int n, long seed) {
         Rng rng = new Rng(seed * 31 + n);
         int w = Math.min(3 + n / 2, 8);
         int h = Math.min(3 + (n - 1) / 2, 7);
         int rooms = Math.min(4 + n * 2, (int) (w * h * 0.8));
-        int fuses = Math.min(2 + n / 2, 7);
+        int fuses = Math.min(3 + n / 2, 8);
+        int valves = n >= 2 ? Math.min(1 + n / 3, 3) : 0;
         double speed = Math.min(1.35, 1 + 0.04 * (n - 1));
         RuleSet rules = RuleDeck.draw(n, rng);
-        return new ShiftDef(n, Lang.t("endless.shift", n), "", w, h, rooms, fuses, 0.25, speed, rules, false, true);
+        return new ShiftDef(n, Lang.t("endless.shift", n), "", w, h, rooms, fuses, 0.15, speed, rules, false, true, valves, n >= 2);
     }
 }

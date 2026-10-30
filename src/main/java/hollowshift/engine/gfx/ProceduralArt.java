@@ -40,6 +40,12 @@ final class ProceduralArt {
             case "lever" -> lever(variant == 1);
             case "crate" -> crate();
             case "note" -> note(variant == 1);
+            case "valve" -> valve(variant == 1);
+            case "item_key" -> key();
+            case "decor_bones" -> bones();
+            case "decor_rubble" -> rubble(variant);
+            case "decor_web" -> web();
+            case "decor_pick" -> pick();
             default -> missing();
         };
     }
@@ -420,6 +426,110 @@ final class ProceduralArt {
     private BufferedImage missing() {
         BufferedImage im = img(8, 8);
         for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) im.setRGB(x, y, ((x + y) % 2 == 0) ? 0xffff00ff : 0xff000000);
+        return im;
+    }
+
+    /** A pressure valve: a pipe stub with a hand wheel; open = wheel turned, a wisp of steam. */
+    private BufferedImage valve(boolean open) {
+        BufferedImage im = img(16, 16);
+        Graphics2D g = im.createGraphics();
+        g.setColor(OUTLINE);
+        g.fillRect(6, 7, 4, 9);
+        g.setColor(new Color(92, 84, 80));
+        g.fillRect(7, 8, 2, 8);
+        g.setColor(OUTLINE);
+        g.drawOval(2, 1, 11, 11);
+        g.setColor(open ? new Color(110, 150, 110) : new Color(170, 40, 34));
+        g.drawOval(3, 2, 9, 9);
+        if (open) {
+            g.drawLine(4, 6, 11, 6);
+            g.drawLine(7, 3, 7, 10);
+        } else {
+            g.drawLine(4, 3, 11, 10);
+            g.drawLine(11, 3, 4, 10);
+        }
+        g.setColor(new Color(60, 56, 54));
+        g.fillRect(6, 5, 3, 3);
+        g.dispose();
+        return im;
+    }
+
+    /** The lift gate key: big, iron, on a tag. */
+    private BufferedImage key() {
+        BufferedImage im = img(10, 10);
+        Graphics2D g = im.createGraphics();
+        g.setColor(OUTLINE);
+        g.fillOval(0, 0, 6, 6);
+        g.fillRect(4, 2, 6, 3);
+        g.fillRect(7, 4, 3, 4);
+        g.setColor(new Color(214, 176, 82));
+        g.drawOval(1, 1, 3, 3);
+        g.fillRect(5, 3, 4, 1);
+        g.fillRect(8, 4, 1, 3);
+        g.setColor(new Color(170, 40, 34));
+        g.fillRect(0, 7, 3, 3);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage bones() {
+        BufferedImage im = img(14, 8);
+        Graphics2D g = im.createGraphics();
+        Color bone = new Color(196, 186, 162);
+        g.setColor(bone);
+        g.drawLine(1, 6, 9, 2);
+        g.drawLine(4, 1, 12, 6);
+        g.fillOval(0, 5, 2, 2);
+        g.fillOval(8, 1, 2, 2);
+        g.fillOval(3, 0, 2, 2);
+        g.fillOval(11, 5, 2, 2);
+        g.setColor(shade(bone, -40));
+        g.fillOval(9, 4, 4, 4); // a skull, half buried
+        g.setColor(OUTLINE);
+        g.fillRect(10, 5, 1, 1);
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage rubble(int v) {
+        BufferedImage im = img(16, 10);
+        Random r = new Random(v * 31L + 7);
+        Graphics2D g = im.createGraphics();
+        for (int i = 0; i < 7; i++) {
+            int s = 2 + r.nextInt(4), x = r.nextInt(16 - s), y = 3 + r.nextInt(7 - Math.min(s, 6));
+            g.setColor(OUTLINE);
+            g.fillRect(x, y + 1, s, s - 1);
+            g.setColor(shade(WALL_TOP, r.nextInt(30) - 10));
+            g.fillRect(x, y, s - 1, s - 1);
+        }
+        g.dispose();
+        return im;
+    }
+
+    private BufferedImage web() {
+        BufferedImage im = img(16, 16);
+        Graphics2D g = im.createGraphics();
+        g.setColor(new Color(210, 210, 220, 90));
+        for (int i = 0; i < 5; i++) g.drawLine(0, 0, 15, i * 4);
+        for (int i = 0; i < 4; i++) g.drawLine(0, 0, i * 4, 15);
+        for (int k = 4; k <= 14; k += 5) {
+            g.drawArc(-k, -k, k * 2, k * 2, 270, 90);
+        }
+        g.dispose();
+        return im;
+    }
+
+    /** A miner's pick left where it was dropped. */
+    private BufferedImage pick() {
+        BufferedImage im = img(14, 10);
+        Graphics2D g = im.createGraphics();
+        g.setColor(new Color(110, 78, 50));
+        g.drawLine(2, 9, 10, 2);
+        g.setColor(OUTLINE);
+        g.drawLine(6, 0, 13, 5);
+        g.setColor(new Color(150, 150, 160));
+        g.drawLine(7, 0, 13, 4);
+        g.dispose();
         return im;
     }
 }

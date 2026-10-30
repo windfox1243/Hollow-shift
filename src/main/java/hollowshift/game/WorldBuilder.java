@@ -16,14 +16,25 @@ public final class WorldBuilder {
     private WorldBuilder() {
     }
 
-    public static World build(Services services, ShiftDef shift, long seed) {
-        return shift.finale() ? buildFinale(services, shift, seed) : buildGenerated(services, shift, seed);
-    }
+    /** Seconds the Tenant sleeps at the start of every shift before it starts to hunt. */
+    public static final double DORMANT = 10;
 
-    private static World buildGenerated(Services services, ShiftDef shift, long seed) {
+    /** Every shift, the final one included, is a freshly generated map. */
+    public static World build(Services services, ShiftDef shift, long seed) {
+        // vary the grid itself so the same shift never has quite the same shape twice
+        Rng shape = new Rng(seed * 7 + 3);
+        int gw = shift.cellsW() + shape.range(0, 2), gh = shift.cellsH() + shape.range(0, 2);
+        if (shape.chance(0.4)) {
+            int t = gw;
+            gw = gh;
+            gh = t;
+        }
         WorldGenerator.Level level = new WorldGenerator(LIBRARY)
-                .generate(seed, shift.cellsW(), shift.cellsH(), shift.rooms(), shift.loopChance());
-        World world = new World(services, shift, level.map(), new FuseObjectives(shift.fuses()), seed);
+                .generate(seed, gw, gh, shift.rooms(), shift.loopChance());
+        int breakers = Math.max(3, shift.fuses());
+        Objectives objectives = shift.finale() ? new FinaleObjectives(breakers)
+                : new ShiftObjectives(shift.fuses(), shift.valves(), shift.liftKey());
+        World world = new World(services, shift, level.map(), objectives, seed);
         Rng rng = new Rng(seed + 99);
 
         Map<Character, List<Marker>> byType = new HashMap<>();
@@ -44,19 +55,33 @@ public final class WorldBuilder {
         world.add(new Player(playerSpot.x(), playerSpot.y()));
 
         Set<Marker> used = new HashSet<>();
-        // fuse boxes: the deepest rooms first, at most one per room
-        List<Marker> boxSpots = spreadPick(byType.getOrDefault('f', List.of()), shift.fuses(), rng, used, true);
-        if (boxSpots.size() < shift.fuses()) {
-            boxSpots.addAll(spreadPick(byType.getOrDefault('i', List.of()), shift.fuses() - boxSpots.size(), rng, used, true));
+        // fuse boxes (or the final shift's breakers): the deepest rooms first, at most one per room
+        int machines = shift.finale() ? breakers : shift.fuses();
+        List<Marker> boxSpots = spreadPick(byType.getOrDefault('f', List.of()), machines, rng, used, true);
+        if (boxSpots.size() < machines) {
+            boxSpots.addAll(spreadPick(byType.getOrDefault('i', List.of()), machines - boxSpots.size(), rng, used, true));
         }
-        for (Marker m : boxSpots) world.add(new FuseBox(m.x(), m.y()));
+        for (Marker m : boxSpots) world.add(shift.finale() ? new Lever(m.x(), m.y()) : new FuseBox(m.x(), m.y()));
+        // valves on the lift's hydraulics, each in a room of its own; the gate key as deep as it gets
+        List<Marker> machineSpots = new ArrayList<>(byType.getOrDefault('f', List.of()));
+        machineSpots.addAll(byType.getOrDefault('i', List.of()));
+        for (Marker m : spreadPick(machineSpots, shift.valves(), rng, used, false)) world.add(new Valve(m.x(), m.y()));
+        if (shift.liftKey() && !shift.finale()) {
+            List<Marker> keySpot = spreadPick(byType.getOrDefault('i', List.of()), 1, rng, used, true);
+            if (!keySpot.isEmpty()) world.add(new LiftKey(keySpot.get(0).x(), keySpot.get(0).y()));
+        }
+        if (shift.finale()) {
+            // the knocking crack: somewhere deep, in a room of its own
+            List<Marker> crack = spreadPick(byType.getOrDefault('i', List.of()), 1, rng, used, true);
+            if (crack.isEmpty()) crack = spreadPick(byType.getOrDefault('f', List.of()), 1, rng, used, true);
+            world.add(new Crack(crack.get(0).x(), crack.get(0).y()));
+        }
 
         List<Marker> items = new ArrayList<>(byType.getOrDefault('i', List.of()));
         items.removeIf(used::contains);
         rng.shuffle(items);
         Deque<Marker> spots = new ArrayDeque<>(items);
-        int fuses = shift.fuses() + Math.max(1, shift.fuses() / 2);
-        placeFuses(world, spots, fuses, used);
+        if (!shift.finale()) placeFuses(world, spots, shift.fuses() + Math.max(1, shift.fuses() / 2), used);
         if (!shift.endless()) {
             // two notes per story shift, in the deepest free spots
             List<Marker> deep = new ArrayList<>(spots);
@@ -74,9 +99,18 @@ public final class WorldBuilder {
         place(world, spots, (shift.rules().has(Rule.BATTERY) ? 2 : 1) + shift.number() / 2, BatteryCell::new);
         place(world, spots, (shift.rules().has(Rule.HUNGER) ? 3 : 1) + shift.number() / 3, FoodCan::new);
 
-        boolean cold = shift.rules().has(Rule.COLD);
-        for (Marker m : byType.getOrDefault('h', List.of())) {
-            if (cold ? rng.chance(0.7) : rng.chance(0.15)) world.add(new Heater(m.x(), m.y()));
+        // under COLD the fires are few and far apart: the lift room's, then about one room in three,
+        // spread out so you have to plan a route between them
+        List<Marker> fires = byType.getOrDefault('h', List.of());
+        if (shift.rules().has(Rule.COLD)) {
+            for (Marker m : fires) if (m.depth() == 0) world.add(new Heater(m.x(), m.y()));
+            // with SIGHT too the lantern must stay off, so the dark is colder company: one more fire
+            int count = Math.max(2, countRooms(level) / 3) + (shift.rules().has(Rule.SIGHT) ? 1 : 0);
+            for (Marker m : spreadPick(fires, count, rng, used, false)) {
+                world.add(new Heater(m.x(), m.y()));
+            }
+        } else {
+            for (Marker m : fires) if (rng.chance(0.15)) world.add(new Heater(m.x(), m.y()));
         }
         for (Marker m : byType.getOrDefault('l', List.of())) {
             double r = rng.next();
@@ -102,10 +136,148 @@ public final class WorldBuilder {
                 far = c;
             }
         }
+        if (shift.rules().has(Rule.CONSUME)) placeGrowth(world, level, rng, playerSpot);
+        decorate(world, level, rng, playerSpot);
         double[] spawn = openSpotInCell(level, far);
         Creature tenant = world.add(new Creature(spawn[0], spawn[1], shift.creatureSpeed()));
-        tenant.setDormant(rng.range(20.0, 30.0));
+        tenant.setDormant(DORMANT);
         return world;
+    }
+
+    private static int countRooms(WorldGenerator.Level level) {
+        int n = 0;
+        for (int d : level.depth()) if (d >= 0) n++;
+        return n;
+    }
+
+    /**
+     * CONSUME: tentacle nests in the walls and knots of flesh on the floor, never in the lift room.
+     * Half the knots sit in doorways, where you have to edge past them.
+     */
+    private static void placeGrowth(World world, WorldGenerator.Level level, Rng rng, Marker playerSpot) {
+        TileMap map = level.map();
+        int rooms = countRooms(level);
+        int maws = 2 + rooms / 3, nodes = 3 + rooms / 3;
+        int c = WorldGenerator.CHUNK, mid = c / 2;
+        List<double[]> taken = new ArrayList<>();
+        for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
+        taken.add(new double[]{playerSpot.x(), playerSpot.y()});
+
+        List<int[]> wallSpots = new ArrayList<>(), floorSpots = new ArrayList<>(), doorSpots = new ArrayList<>();
+        int[] dx = {0, 1, 0, -1}, dy = {-1, 0, 1, 0};
+        for (int ty = 0; ty < map.height; ty++) {
+            for (int tx = 0; tx < map.width; tx++) {
+                if (map.solid(tx, ty)) continue;
+                int cell = ty / c * level.cellsW() + tx / c;
+                if (cell == level.startCell()) continue;
+                int lx = tx % c, ly = ty % c;
+                boolean ring = lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1;
+                if (ring) {
+                    if (lx == mid || ly == mid) doorSpots.add(new int[]{tx, ty});
+                    continue;
+                }
+                // keep the ways in and out of a room clear of wall nests
+                boolean nearDoor = (Math.abs(lx - mid) <= 2 && (ly <= 2 || ly >= c - 3)) || (Math.abs(ly - mid) <= 2 && (lx <= 2 || lx >= c - 3));
+                int wall = -1, solids = 0;
+                for (int d = 0; d < 4; d++) {
+                    if (map.solid(tx + dx[d], ty + dy[d])) {
+                        solids++;
+                        wall = d;
+                    }
+                }
+                if (solids == 1 && !nearDoor) wallSpots.add(new int[]{tx, ty, wall});
+                else if (solids == 0) floorSpots.add(new int[]{tx, ty});
+            }
+        }
+        rng.shuffle(wallSpots);
+        rng.shuffle(floorSpots);
+        rng.shuffle(doorSpots);
+        int placed = 0;
+        for (int[] t : wallSpots) {
+            if (placed >= maws) break;
+            double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+            if (!clear(taken, x, y, 90)) continue;
+            world.add(new WallMaw(x, y, dx[t[2]], dy[t[2]]));
+            taken.add(new double[]{x, y});
+            placed++;
+        }
+        placed = 0;
+        for (List<int[]> pool : List.of(doorSpots, floorSpots)) {
+            int want = pool == doorSpots ? (nodes + 1) / 2 : nodes;
+            for (int[] t : pool) {
+                if (placed >= want) break;
+                double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+                if (!clear(taken, x, y, 70)) continue;
+                world.add(new FleshNode(x, y));
+                taken.add(new double[]{x, y});
+                placed++;
+            }
+        }
+    }
+
+    /** Heavy things the last crew left against the walls. */
+    private static final String[] WALL_PROPS = {"decor_minecart", "decor_shelf", "decor_table", "decor_bookcase", "decor_barrel",
+            "decor_barrel", "decor_chest", "decor_anvil", "decor_stove", "decor_sack", "decor_sack", "decor_grave", "decor_cross", "crate"};
+    /** Small things dropped on the floor. */
+    private static final String[] FLOOR_PROPS = {"decor_bones", "decor_bones", "decor_rubble_0", "decor_rubble_1", "decor_rubble_2",
+            "decor_rubble_3", "decor_bottle", "decor_vial", "decor_hammer", "decor_axe", "decor_pick", "decor_pick", "decor_bucket", "decor_stool"};
+
+    /**
+     * Five to eight props per room: heavy ones along the walls, small ones on the floor and
+     * cobwebs in the corners. They never block a path and keep clear of everything usable.
+     */
+    private static void decorate(World world, WorldGenerator.Level level, Rng rng, Marker playerSpot) {
+        TileMap map = level.map();
+        int c = WorldGenerator.CHUNK, mid = c / 2;
+        List<double[]> taken = new ArrayList<>();
+        for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
+        taken.add(new double[]{playerSpot.x(), playerSpot.y()});
+        Map<Integer, List<int[]>> walls = new HashMap<>(), floors = new HashMap<>(), corners = new HashMap<>();
+        int[] dx = {0, 1, 0, -1}, dy = {-1, 0, 1, 0};
+        for (int ty = 0; ty < map.height; ty++) {
+            for (int tx = 0; tx < map.width; tx++) {
+                if (map.solid(tx, ty)) continue;
+                int lx = tx % c, ly = ty % c;
+                if (lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1) continue;
+                // doorway lanes stay clear
+                if (Math.abs(lx - mid) <= 1 && (ly <= 2 || ly >= c - 3) || Math.abs(ly - mid) <= 1 && (lx <= 2 || lx >= c - 3)) continue;
+                int cell = ty / c * level.cellsW() + tx / c;
+                int solids = 0;
+                boolean north = map.solid(tx, ty - 1);
+                for (int d = 0; d < 4; d++) if (map.solid(tx + dx[d], ty + dy[d])) solids++;
+                Map<Integer, List<int[]>> into = solids >= 2 ? corners : solids == 1 && north ? walls : solids == 0 ? floors : null;
+                if (into != null) into.computeIfAbsent(cell, k -> new ArrayList<>()).add(new int[]{tx, ty});
+            }
+        }
+        for (int cell = 0; cell < level.depth().length; cell++) {
+            if (level.depth()[cell] < 0) continue;
+            int want = rng.range(5, 9);
+            int heavy = rng.range(1, 4), webs = rng.range(0, 3);
+            want -= place(world, rng, taken, walls.get(cell), heavy, WALL_PROPS);
+            want -= place(world, rng, taken, corners.get(cell), webs, new String[]{"decor_web"});
+            place(world, rng, taken, floors.get(cell), Math.max(0, want), FLOOR_PROPS);
+        }
+    }
+
+    private static int place(World world, Rng rng, List<double[]> taken, List<int[]> spots, int count, String[] sprites) {
+        if (spots == null || count <= 0) return 0;
+        List<int[]> pool = new ArrayList<>(spots);
+        rng.shuffle(pool);
+        int placed = 0;
+        for (int[] t : pool) {
+            if (placed >= count) break;
+            double x = TileMap.center(t[0]) + rng.range(-3, 3), y = TileMap.center(t[1]) + rng.range(-2, 2);
+            if (!clear(taken, x, y, 22)) continue;
+            world.add(new Decor(x, y, sprites[rng.range(0, sprites.length)]));
+            taken.add(new double[]{x, y});
+            placed++;
+        }
+        return placed;
+    }
+
+    private static boolean clear(List<double[]> taken, double x, double y, double gap) {
+        for (double[] p : taken) if (Math.hypot(p[0] - x, p[1] - y) < gap) return false;
+        return true;
     }
 
     /** Fuses go to rooms other than the start room when possible. */
@@ -171,65 +343,5 @@ public final class WorldBuilder {
                         return new double[]{TileMap.center(tx), TileMap.center(ty)};
                 }
         return new double[]{TileMap.center(ox + mid), TileMap.center(oy + mid)};
-    }
-
-    // ---- final shift: hand-made map ---------------------------------------------------------------
-
-    /** A hand-made map: tiles plus the marker letters found in it. */
-    public record HandMap(TileMap map, List<Marker> markers) {
-    }
-
-    public static HandMap parseHandMap(String text) {
-        List<String> rows = new ArrayList<>();
-        for (String line : text.split("\r?\n")) {
-            if (!line.startsWith(";") && !line.isBlank()) rows.add(line);
-        }
-        int w = rows.stream().mapToInt(String::length).max().orElse(0);
-        TileMap map = new TileMap(w, rows.size());
-        List<Marker> markers = new ArrayList<>();
-        for (int y = 0; y < rows.size(); y++) {
-            String r = rows.get(y);
-            for (int x = 0; x < w; x++) {
-                char c = x < r.length() ? r.charAt(x) : ' ';
-                map.set(x, y, c == ' ' ? Tile.VOID : Tile.fromSymbol(c));
-                if (Character.isLetter(c) && c != 'x') markers.add(new Marker(c, x, y, 0, 0));
-            }
-        }
-        return new HandMap(map, markers);
-    }
-
-    private static World buildFinale(Services services, ShiftDef shift, long seed) {
-        HandMap hand = parseHandMap(Resources.require("/chunks/finale.txt"));
-        TileMap map = hand.map();
-        List<Marker> markers = hand.markers();
-        FinaleObjectives obj = new FinaleObjectives((int) markers.stream().filter(m -> m.type() == 'L').count());
-        World world = new World(services, shift, map, obj, seed);
-        Rng rng = new Rng(seed + 7);
-        int noteIndex = 0, supplies = 0;
-        for (Marker m : markers) {
-            if (m.type() == 'i' && noteIndex < 2) {
-                // the last two notes of the story wait in the final map
-                world.add(new Note(m.x(), m.y(), shift.number() * 2 - 1 + noteIndex++));
-            } else if (m.type() == 'i' && supplies < 3) {
-                // two spare cells and a can for the long walk through the lever halls
-                world.add(supplies++ < 2 ? new BatteryCell(m.x(), m.y()) : new FoodCan(m.x(), m.y()));
-            }
-            switch (m.type()) {
-                case 'P' -> world.add(new Player(m.x(), m.y()));
-                case 'E' -> world.add(new Elevator(m.x(), m.y() + 8));
-                case 'L' -> world.add(new Lever(m.x(), m.y()));
-                case 'K' -> world.add(new Crack(m.x(), m.y()));
-                case 'h' -> world.add(new Heater(m.x(), m.y()));
-                case 'l' -> world.add(new WallLamp(m.x(), m.y(), rng.chance(0.6) ? WallLamp.Mode.FLICKER : WallLamp.Mode.STEADY));
-                case 'C' -> world.add(new Creature(m.x(), m.y(), shift.creatureSpeed())).setDormant(10);
-                case 's' -> world.add(new Stone(m.x(), m.y()));
-                case 'r' -> world.add(new Flare(m.x(), m.y()));
-                default -> {
-                    // 'i' and other markers only serve as wander points
-                }
-            }
-            world.addRoomPoint(m.x(), m.y());
-        }
-        return world;
     }
 }

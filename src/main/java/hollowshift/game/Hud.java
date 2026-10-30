@@ -104,6 +104,17 @@ public final class Hud {
             if (f.holdTime() > 0 && p.holdProgress() > 0) bar(g, px - 15, py + 5, 30, 3, p.holdProgress(), new Color(120, 255, 140));
         }
 
+        // pinned by a wall nest: the struggle meter and how close the wall is to taking you
+        if (p.trappedBy() != null) {
+            var maw = p.trappedBy();
+            int cx = Window.WIDTH / 2, cy = Window.HEIGHT / 2 + 40;
+            boolean blink = (int) (w.time * 8) % 2 == 0;
+            String key = Input.keyName(w.input().binding(Action.INTERACT)[0]);
+            Text.draw(g, Lang.t("hud.struggle", key), cx, cy, 16, blink ? Color.WHITE : new Color(255, 120, 110), Text.CENTER);
+            bar(g, cx - 50, cy + 8, 100, 6, maw.struggleProgress(), new Color(120, 255, 140));
+            bar(g, cx - 50, cy + 18, 100, 3, 1 - maw.swallowProgress(), new Color(200, 40, 50));
+        }
+
         // toast message
         String toast = w.toast();
         if (toast != null) {

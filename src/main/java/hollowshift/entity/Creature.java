@@ -88,7 +88,6 @@ public final class Creature extends Entity implements LightSource {
         if (world.rules.has(Rule.SIGHT)) senses.add(new SightSense());
         if (world.rules.has(Rule.HEARING)) senses.add(new HearingSense());
         if (world.rules.has(Rule.SMELL)) senses.add(new SmellSense());
-        if (world.rules.has(Rule.TREMOR)) senses.add(new TremorSense());
         if (world.rules.has(Rule.ECHO)) senses.add(new EchoSense());
         setState(new WanderState());
     }
@@ -154,6 +153,12 @@ public final class Creature extends Entity implements LightSource {
             return;
         }
         setState(new InvestigateState(s.x(), s.y()));
+    }
+
+    /** Its growth was touched (CONSUME): it knows exactly where the player is. */
+    public void alarm(double px, double py) {
+        if (isDormant()) return;
+        perceive(new Stimulus(px, py, 1, Stimulus.Kind.TRAP));
     }
 
     public void stun() {

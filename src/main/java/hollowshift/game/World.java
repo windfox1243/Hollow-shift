@@ -102,6 +102,11 @@ public final class World {
         return entities;
     }
 
+    /** Entities added but not yet in play (while a level is being built). */
+    public List<Entity> pendingEntities() {
+        return pending;
+    }
+
     public List<Creature> creatures() {
         return creatures;
     }

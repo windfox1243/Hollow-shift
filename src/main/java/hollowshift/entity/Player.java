@@ -36,6 +36,7 @@ public final class Player extends Entity implements LightSource {
 
     private Carryable held;
     private final Pack pack = new Pack();
+    private WallMaw trappedBy;
     private double secondWind;
     private boolean lanternOn = true;
     private boolean running;
@@ -62,6 +63,8 @@ public final class Player extends Entity implements LightSource {
         if (frozen) {
             moving = running = false;
             vx = vy = 0;
+            // pinned by the wall: hammer Interact to tear free
+            if (trappedBy != null && in.pressed(Action.INTERACT)) trappedBy.struggle();
             return;
         }
         double mx = 0, my = 0;
@@ -286,6 +289,15 @@ public final class Player extends Entity implements LightSource {
 
     public Pack pack() {
         return pack;
+    }
+
+    /** Set by a {@link WallMaw} while it pins the player to the rock. */
+    void setTrappedBy(WallMaw m) {
+        trappedBy = m;
+    }
+
+    public WallMaw trappedBy() {
+        return trappedBy;
     }
 
     /** Seconds of a meal's second wind left. */

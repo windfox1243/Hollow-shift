@@ -7,7 +7,7 @@ public enum Rule {
     SIGHT(Subject.TENANT),
     HEARING(Subject.TENANT),
     SMELL(Subject.TENANT),
-    TREMOR(Subject.TENANT),
+    CONSUME(Subject.TENANT),
     ECHO(Subject.TENANT),
     HASTE(Subject.TENANT),
     BATTERY(Subject.YOU),
@@ -32,6 +32,6 @@ public enum Rule {
 
     /** Rules that let the Tenant locate the player. */
     public boolean isSense() {
-        return this == SIGHT || this == HEARING || this == SMELL || this == TREMOR;
+        return this == SIGHT || this == HEARING || this == SMELL;
     }
 }

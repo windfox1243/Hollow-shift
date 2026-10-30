@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Draws a random rule set for endless mode. Difficulty grows with the shift number:
  * shift 1 has no rules, from shift 2 there is always at least one sense,
- * ECHO appears from shift 3 and HASTE from shift 4.
+ * ECHO and CONSUME appear from shift 3 and HASTE from shift 4.
  */
 public final class RuleDeck {
     private RuleDeck() {
@@ -23,7 +23,7 @@ public final class RuleDeck {
         int count = ruleCount(shift);
         if (shift <= 1 || count == 0) return rules;
 
-        List<Rule> senses = new ArrayList<>(List.of(Rule.SIGHT, Rule.HEARING, Rule.SMELL, Rule.TREMOR));
+        List<Rule> senses = new ArrayList<>(List.of(Rule.SIGHT, Rule.HEARING, Rule.SMELL));
         rules.add(rng.pick(senses));
 
         List<Rule> pool = new ArrayList<>(List.of(Rule.values()));
@@ -31,7 +31,7 @@ public final class RuleDeck {
         for (Rule r : pool) {
             if (rules.size() >= count) break;
             if (r == Rule.HASTE && shift < 4) continue;
-            if (r == Rule.ECHO && shift < 3) continue;
+            if ((r == Rule.ECHO || r == Rule.CONSUME) && shift < 3) continue;
             // at most two survival rules, otherwise early shifts become a resource grind
             long you = rules.ordered().stream().filter(x -> x.subject == Rule.Subject.YOU).count();
             if (r.subject == Rule.Subject.YOU && you >= 2) continue;

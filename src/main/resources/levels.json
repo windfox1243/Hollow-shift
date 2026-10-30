@@ -1,32 +1,35 @@
 // HOLLOW SHIFT story campaign (original content): layout and difficulty per shift.
 // Shifts are only numbered; intros, tips and the ending are in lang/<code>.json.
-// rules: SIGHT HEARING SMELL TREMOR ECHO HASTE BATTERY COLD HUNGER
+// Jobs before the lift runs: "fuses" boxes to power, "valves" to bleed, "liftKey" to find
+// (in the final shift "fuses" is the number of main breakers).
+// Grid sizes are a starting point: each run may widen, heighten or turn the grid.
+// rules: SIGHT HEARING SMELL CONSUME ECHO HASTE BATTERY COLD HUNGER
 {
   "shifts": [
     {
-      "cellsW": 3, "cellsH": 3, "rooms": 5, "fuses": 2,
+      "cellsW": 3, "cellsH": 3, "rooms": 6, "fuses": 3,
       "creatureSpeed": 0.9,
       "rules": []
     },
     {
-      "cellsW": 4, "cellsH": 3, "rooms": 7, "fuses": 3,
+      "cellsW": 4, "cellsH": 3, "rooms": 8, "fuses": 4, "valves": 1, "liftKey": true,
       "creatureSpeed": 1.0,
       "rules": ["HEARING"]
     },
     {
-      "cellsW": 4, "cellsH": 4, "rooms": 9, "fuses": 3,
+      "cellsW": 4, "cellsH": 4, "rooms": 10, "fuses": 5, "valves": 2, "liftKey": true,
       "creatureSpeed": 1.0,
       "rules": ["SIGHT", "COLD"]
     },
     {
-      "cellsW": 5, "cellsH": 4, "rooms": 11, "fuses": 4,
+      "cellsW": 5, "cellsH": 4, "rooms": 13, "fuses": 6, "valves": 2, "liftKey": true,
       "creatureSpeed": 1.05,
       "rules": ["SMELL", "ECHO", "BATTERY"]
     },
     {
-      "cellsW": 0, "cellsH": 0, "rooms": 0, "fuses": 0,
+      "cellsW": 5, "cellsH": 5, "rooms": 15, "fuses": 4,
       "creatureSpeed": 1.05,
-      "rules": ["SIGHT", "HEARING", "TREMOR", "COLD"],
+      "rules": ["SIGHT", "HEARING", "CONSUME", "COLD"],
       "finale": true
     }
   ]

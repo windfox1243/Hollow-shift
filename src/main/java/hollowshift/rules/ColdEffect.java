@@ -7,11 +7,13 @@ import hollowshift.game.World;
 import java.awt.Color;
 
 /**
- * COLD: standing away from warm light chills the player; the lantern only
- * halves the rate. Heaters, lamps and flares warm you back up. Cold slows you down.
+ * COLD: away from a fire the player chills. In the dark (lantern off or dead) it takes
+ * about 40 seconds to freeze; the lantern's little warmth stretches that to 80. Heaters,
+ * lamps and flares warm you back up. Cold slows you down and tires you out.
  */
 public final class ColdEffect implements StatusEffect {
-    private static final double FREEZE_SECONDS = 45;
+    public static final double FREEZE_SECONDS_DARK = 40;
+    public static final double FREEZE_SECONDS_LIT = 80;
 
     @Override
     public void update(Player p, World world, double dt) {
@@ -19,10 +21,12 @@ public final class ColdEffect implements StatusEffect {
         if (warmth > 0.3) {
             p.cold = Math.max(0, p.cold - dt * (0.05 + warmth * 0.15));
         } else {
-            double rate = p.lanternOn() ? 0.5 : 1.0;
-            p.cold = Math.min(1, p.cold + dt / FREEZE_SECONDS * rate);
+            double seconds = p.lanternOn() ? FREEZE_SECONDS_LIT : FREEZE_SECONDS_DARK;
+            p.cold = Math.min(1, p.cold + dt / seconds);
         }
+        // stiff legs: up to 40% slower, and once badly chilled running tires you sooner
         p.speedFactor *= 1 - 0.4 * p.cold;
+        if (p.isRunning() && p.cold > 0.5) p.stamina = Math.max(0, p.stamina - dt * 0.15 * (p.cold - 0.5) * 2);
         if (p.cold >= 1) world.kill(DeathCause.COLD);
     }
 

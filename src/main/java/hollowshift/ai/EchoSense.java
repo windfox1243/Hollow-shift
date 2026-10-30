@@ -3,7 +3,7 @@ package hollowshift.ai;
 import hollowshift.entity.Creature;
 import hollowshift.game.World;
 
-/** ECHO: a loud noise anywhere pulls the Tenant to it (a short fade, then it reappears nearby). */
+/** ECHO: a loud noise anywhere pulls the Tenant to it (a short fade, then it comes in through a doorway of that room). */
 public final class EchoSense implements Sense {
     private double cooldown;
 

@@ -18,6 +18,7 @@ import hollowshift.world.*;
 
 import java.awt.event.KeyEvent;
 import java.util.*;
+import java.util.EnumSet;
 
 /** Self-contained test runner (no JUnit needed): java tools/Build.java test */
 public final class RunTests {
@@ -47,6 +48,12 @@ public final class RunTests {
         test("SMELL: a player who runs can shake off the Tenant", RunTests::outrunSmell);
         test("hidden ending: the crack opens only with all notes read", RunTests::hiddenEnding);
         test("pockets: items are stashed, capped and used from the pack", RunTests::pockets);
+        test("no room is a dead end: every door lies on a loop", RunTests::noDeadEnds);
+        test("ECHO: the Tenant arrives through a doorway, not mid-room", RunTests::echoDoorway);
+        test("CONSUME: a wall nest pins you; hammering E frees you, waiting kills", RunTests::wallMaw);
+        test("CONSUME: stepping on its flesh calls the Tenant", RunTests::fleshNode);
+        test("valves and the gate key are jobs for the lift", RunTests::liftJobs);
+        test("COLD: the dark freezes faster than lantern light", RunTests::coldDark);
         test("a note picked up is kept in the journal", RunTests::notesKept);
         test("the lantern drains in every shift, faster under BATTERY", RunTests::lanternDrains);
         test("every shift runs 90 simulated seconds with a random bot", RunTests::simulation);
@@ -87,12 +94,12 @@ public final class RunTests {
 
     private static void templates() {
         ChunkLibrary lib = ChunkLibrary.load();
-        check(lib.rooms().size() >= 10, "expected at least 10 room templates, got " + lib.rooms().size());
+        check(lib.rooms().size() >= 20, "expected at least 20 room templates, got " + lib.rooms().size());
         check(!lib.starts().isEmpty(), "missing start template");
         List<ChunkTemplate> all = new ArrayList<>(lib.rooms());
         all.addAll(lib.starts());
         for (ChunkTemplate t : all) {
-            for (int flip = 0; flip < 4; flip++) {
+            for (int flip = 0; flip < 8; flip++) {
                 // every template is checked inside a room with all four doorways open
                 TileMap map = new TileMap(WorldGenerator.CHUNK, WorldGenerator.CHUNK);
                 List<Marker> markers = new ArrayList<>();
@@ -109,10 +116,10 @@ public final class RunTests {
         check(lib.starts().get(0).rows().stream().anyMatch(r -> r.indexOf('P') >= 0), "start room needs a player marker");
     }
 
-    /** Stamps a template with all four doorways open; flip bit 0 mirrors X, bit 1 mirrors Y. */
+    /** Stamps a template with all four doorways open; flip bit 0 mirrors X, bit 1 mirrors Y, bit 2 turns it. */
     private static void stamp(TileMap map, List<Marker> markers, ChunkTemplate t, int flip) {
         int all = WorldGenerator.N | WorldGenerator.E | WorldGenerator.S | WorldGenerator.W;
-        WorldGenerator.stamp(map, markers, t, 0, 0, all, (flip & 1) != 0, (flip & 2) != 0, 0, 0);
+        WorldGenerator.stamp(map, markers, t, 0, 0, all, (flip & 1) != 0, (flip & 2) != 0, (flip & 4) != 0, 0, 0);
     }
 
     private static boolean[] flood(TileMap map, int sx, int sy) {
@@ -160,7 +167,8 @@ public final class RunTests {
                 for (int x = 0; x < lvl.map().width; x++)
                     if (!lvl.map().solid(x, y)) check(seen[y * lvl.map().width + x], "seed " + seed + ": tile " + x + "," + y + " unreachable");
             long count = Arrays.stream(lvl.depth()).filter(d -> d >= 0).count();
-            check(count == rooms, "seed " + seed + ": expected " + rooms + " rooms, got " + count);
+            // the last ear may be one room longer than needed
+            check(count == rooms || count == rooms + 1, "seed " + seed + ": expected " + rooms + " rooms, got " + count);
             long boxes = lvl.markers().stream().filter(m -> (m.type() == 'f' || m.type() == 'i') && m.depth() > 0).count();
             check(boxes >= 7, "seed " + seed + ": too few spots for fuses/boxes: " + boxes);
         }
@@ -202,11 +210,19 @@ public final class RunTests {
         check(!c.tips().isEmpty() && !c.ending().isEmpty(), "tips/ending missing");
         ShiftDef a = c.endless(4, 99), b = c.endless(4, 99);
         check(a.rules().ordered().equals(b.rules().ordered()), "endless rules not deterministic");
-        WorldBuilder.HandMap hand = WorldBuilder.parseHandMap(Resources.require("/chunks/finale.txt"));
-        Marker p = hand.markers().stream().filter(m -> m.type() == 'P').findFirst().orElseThrow();
-        boolean[] seen = flood(hand.map(), p.tx(), p.ty());
-        for (Marker m : hand.markers()) check(seen[m.ty() * hand.map().width + m.tx()], "finale marker " + m.type() + " unreachable");
-        check(hand.markers().stream().filter(m -> m.type() == 'L').count() == 3, "finale needs 3 breakers");
+        ShiftDef last = c.shifts().get(c.shifts().size() - 1);
+        for (long seed = 1; seed <= 20; seed++) {
+            World w = WorldBuilder.build(services(), last, seed);
+            int levers = w.pendingEntities().stream().filter(e -> e instanceof Lever).toList().size();
+            check(levers == Math.max(3, last.fuses()), "seed " + seed + ": final map has " + levers + " breakers");
+            check(w.pendingEntities().stream().anyMatch(e -> e instanceof Crack), "seed " + seed + ": final map has no crack");
+        }
+        // later shifts ask for more before the lift runs
+        for (int n = 2; n < c.shifts().size(); n++) {
+            ShiftDef prev = c.shift(n - 1), cur = c.shift(n);
+            int jobsA = prev.fuses() + prev.valves() + (prev.liftKey() ? 1 : 0), jobsB = cur.fuses() + cur.valves() + (cur.liftKey() ? 1 : 0);
+            check(jobsB > jobsA, "shift " + n + " should have more jobs than shift " + (n - 1));
+        }
     }
 
     private static void languages() {
@@ -243,7 +259,7 @@ public final class RunTests {
         TileMap map = new TileMap(30, 14);
         for (int y = 1; y < 13; y++) for (int x = 1; x < 29; x++) map.set(x, y, Tile.FLOOR);
         ShiftDef def = new ShiftDef(1, "test", "", 0, 0, 0, 1, 0, 1, RuleSet.of(rules), false, false);
-        World w = new World(sv, def, map, new FuseObjectives(1), 1);
+        World w = new World(sv, def, map, new ShiftObjectives(1), 1);
         w.addRoomPoint(TileMap.center(25), TileMap.center(7));
         w.add(new Player(TileMap.center(4), TileMap.center(7)));
         w.add(new Creature(TileMap.center(4) + creatureDistance, TileMap.center(7), 0.0001));
@@ -354,7 +370,7 @@ public final class RunTests {
         TileMap map = new TileMap(170, 12);
         for (int y = 1; y < 11; y++) for (int x = 1; x < 169; x++) map.set(x, y, Tile.FLOOR);
         ShiftDef def = new ShiftDef(4, "test", "", 0, 0, 0, 1, 0, 1.05, RuleSet.of(Rule.SMELL), false, false);
-        World w = new World(sv, def, map, new FuseObjectives(1), 1);
+        World w = new World(sv, def, map, new ShiftObjectives(1), 1);
         w.addRoomPoint(TileMap.center(5), TileMap.center(6));
         w.add(new Player(TileMap.center(14), TileMap.center(6)));
         Creature c = w.add(new Creature(TileMap.center(14) - 80, TileMap.center(6), 1.05));
@@ -382,7 +398,7 @@ public final class RunTests {
             w.start();
             hollowshift.entity.Crack crack = w.entitiesOf(hollowshift.entity.Crack.class).get(0);
             check(!crack.canInteract(w.player), "crack open before the lift arrived");
-            for (int i = 0; i < 3; i++) w.objectives().onLeverPulled();
+            for (int i = 0; i < w.entitiesOf(hollowshift.entity.Lever.class).size(); i++) w.objectives().onLeverPulled();
             for (int i = 0; i < 60 * 50; i++) w.objectives().update(1 / 60.0);
             check(w.objectives().exitOpen(), "lift should have arrived");
             check(crack.canInteract(w.player) == allNotes, "crack open=" + crack.canInteract(w.player) + " with allNotes=" + allNotes);
@@ -453,6 +469,130 @@ public final class RunTests {
         tick(rule, 60 * 40);
         check(plain.player.battery < 0.9 && plain.player.battery > 0.7, "40 s of light should cost a little charge, left " + plain.player.battery);
         check(rule.player.battery < plain.player.battery - 0.2, "BATTERY should drain much faster, left " + rule.player.battery);
+    }
+
+    private static void noDeadEnds() {
+        WorldGenerator gen = new WorldGenerator(ChunkLibrary.load());
+        Set<WorldGenerator.Layout> seen = EnumSet.noneOf(WorldGenerator.Layout.class);
+        int[] dx = {0, 1, 0, -1}, dy = {-1, 0, 1, 0};
+        for (int seed = 0; seed < 150; seed++) {
+            int w = 3 + seed % 4, h = 3 + seed % 3;
+            WorldGenerator.Level l = gen.generate(seed, w, h, Math.max(5, w * h * 2 / 3), 0.15);
+            seen.add(l.layout());
+            for (int cell = 0; cell < l.doors().length; cell++) {
+                if (l.depth()[cell] < 0) continue;
+                check(Integer.bitCount(l.doors()[cell]) >= 2, "seed " + seed + ": room " + cell + " is a dead end");
+                for (int d = 1; d <= 2; d++) {
+                    if ((l.doors()[cell] & (1 << d)) == 0) continue;
+                    int other = (cell / w + dy[d]) * w + cell % w + dx[d];
+                    check(reachesWithout(l, cell, other), "seed " + seed + ": door " + cell + "-" + other + " is the only way through");
+                }
+            }
+        }
+        check(seen.size() == WorldGenerator.Layout.values().length, "not every layout appeared: " + seen);
+    }
+
+    /** Whether b can still be reached from a with the door between them shut. */
+    private static boolean reachesWithout(WorldGenerator.Level l, int a, int b) {
+        int w = l.cellsW();
+        int[] dx = {0, 1, 0, -1}, dy = {-1, 0, 1, 0};
+        boolean[] seen = new boolean[l.doors().length];
+        ArrayDeque<Integer> q = new ArrayDeque<>(List.of(a));
+        seen[a] = true;
+        while (!q.isEmpty()) {
+            int c = q.poll();
+            if (c == b) return true;
+            for (int d = 0; d < 4; d++) {
+                if ((l.doors()[c] & (1 << d)) == 0) continue;
+                int o = (c / w + dy[d]) * w + c % w + dx[d];
+                if (c == a && o == b || c == b && o == a || seen[o]) continue;
+                seen[o] = true;
+                q.add(o);
+            }
+        }
+        return false;
+    }
+
+    private static void echoDoorway() {
+        Services sv = services();
+        Campaign camp = Campaign.load();
+        World w = WorldBuilder.build(sv, camp.shift(4), 11);
+        w.start();
+        tick(w, 1);
+        Creature c = w.creatures().get(0);
+        c.setDormant(0);
+        // a noise in a room far from both of them
+        double[] far = null;
+        for (int i = 0; i < 200 && far == null; i++) {
+            double[] p = w.randomRoomPoint();
+            if (w.player.distanceTo(p[0], p[1]) > 300 && c.distanceTo(p[0], p[1]) > 300) far = p;
+        }
+        check(far != null, "setup: no far room");
+        List<double[]> doors = WorldGenerator.doorways(w.map, far[0], far[1]);
+        check(doors.size() >= 2, "a room should have at least two doorways, got " + doors.size());
+        c.echoTo(far[0], far[1]);
+        tick(w, 50);
+        double best = Double.MAX_VALUE;
+        for (double[] d : doors) best = Math.min(best, c.distanceTo(d[0], d[1]));
+        check(best < 2, "the Tenant should be standing in a doorway, nearest is " + (int) best + " px away");
+    }
+
+    private static void wallMaw() {
+        for (boolean fight : new boolean[]{true, false}) {
+            Services sv = services();
+            World w = room(sv, 600, Rule.CONSUME);
+            // a nest in the north wall right above the player
+            WallMaw maw = w.add(new WallMaw(w.player.x, TileMap.center(1), 0, -1));
+            w.player.y = TileMap.center(1) + 6; // walking along the wall, past the nest
+            tick(w, 2);
+            check(w.player.trappedBy() == maw && w.player.isFrozen(), "standing by the nest should pin the player");
+            for (int i = 0; i < 60 * 6 && w.death() == null && w.player.trappedBy() != null; i++) {
+                if (fight && i % 12 == 0) press(sv, w, KeyEvent.VK_E);
+                else tick(w, 1);
+            }
+            if (fight) check(w.death() == null && w.player.trappedBy() == null && !w.player.isFrozen(), "hammering E should tear free");
+            else check(w.death() == DeathCause.CONSUMED, "waiting should be fatal, got " + w.death());
+        }
+    }
+
+    private static void fleshNode() {
+        World w = room(services(), 300, Rule.CONSUME);
+        Creature c = w.creatures().get(0);
+        tick(w, 5);
+        check(!c.isChasing(), "setup: it should not know where the player is");
+        w.add(new FleshNode(w.player.x, w.player.y + 2));
+        tick(w, 3);
+        check(c.isChasing(), "stepping on its flesh should send it after the player");
+    }
+
+    private static void liftJobs() {
+        Services sv = services();
+        TileMap map = new TileMap(30, 14);
+        for (int y = 1; y < 13; y++) for (int x = 1; x < 29; x++) map.set(x, y, Tile.FLOOR);
+        ShiftDef def = new ShiftDef(2, "test", "", 0, 0, 0, 1, 0, 1, RuleSet.of(), false, false, 1, true);
+        ShiftObjectives obj = new ShiftObjectives(1, 1, true);
+        World w = new World(sv, def, map, obj, 1);
+        w.add(new Player(TileMap.center(4), TileMap.center(7)));
+        w.start();
+        check(obj.remaining() == 3, "three jobs expected, got " + obj.remaining());
+        obj.onFuseInstalled();
+        check(!obj.exitOpen(), "lift should still be locked without the valve and key");
+        Valve v = w.add(new Valve(w.player.x, w.player.y));
+        LiftKey k = w.add(new LiftKey(w.player.x + 40, w.player.y));
+        tick(w, 1);
+        v.interact(w.player);
+        k.interact(w.player);
+        check(obj.exitOpen(), "all jobs done, the lift should run");
+    }
+
+    private static void coldDark() {
+        World lit = room(services(), 600, Rule.COLD);
+        World dark = room(services(), 600, Rule.COLD);
+        dark.player.forceLanternOff();
+        tick(lit, 60 * 20);
+        tick(dark, 60 * 20);
+        check(dark.player.cold > lit.player.cold * 1.5, "dark " + dark.player.cold + " vs lit " + lit.player.cold);
+        check(dark.death() == null, "20 s in the dark should not kill yet");
     }
 
     // ---- full shifts with a random bot --------------------------------------------------------------

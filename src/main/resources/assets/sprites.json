@@ -19,5 +19,23 @@
   "player_1":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
   "player_2":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
   "player_3":     {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 128},
-  "item_stone":   {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 128}
+  "item_stone":   {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 128},
+  // props scattered through the rooms (Decor)
+  "decor_minecart": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 64, "tint": "#b8aca0"},
+  "decor_stove": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 112, "y": 64, "tint": "#b8aca0"},
+  "decor_bucket": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 128, "y": 64, "tint": "#b8aca0"},
+  "decor_shelf": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 48, "y": 80, "tint": "#b8aca0"},
+  "decor_cross": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 64, "y": 80, "tint": "#b8aca0"},
+  "decor_grave": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 80, "tint": "#b8aca0"},
+  "decor_sack": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 96, "y": 80, "tint": "#b8aca0"},
+  "decor_table": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 0, "y": 96, "tint": "#b8aca0"},
+  "decor_stool": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 16, "y": 96, "tint": "#b8aca0"},
+  "decor_anvil": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 32, "y": 96, "tint": "#b8aca0"},
+  "decor_bookcase": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 48, "y": 96, "tint": "#b8aca0"},
+  "decor_barrel": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 160, "y": 96, "tint": "#b8aca0"},
+  "decor_chest": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 112, "tint": "#b8aca0"},
+  "decor_bottle": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 144, "tint": "#b8aca0"},
+  "decor_hammer": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 144, "y": 144, "tint": "#b8aca0"},
+  "decor_axe": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 160, "y": 144, "tint": "#b8aca0"},
+  "decor_vial": {"sheet": "third_party/kenney_tiny_dungeon/tilemap_packed.png", "x": 80, "y": 160, "tint": "#b8aca0"}
 }
