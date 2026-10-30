@@ -2,6 +2,7 @@ package hollowshift.game;
 
 import hollowshift.engine.Lang;
 import hollowshift.engine.Rng;
+import hollowshift.engine.gfx.Weathered;
 import hollowshift.engine.io.Resources;
 import hollowshift.entity.*;
 import hollowshift.rules.Rule;
@@ -381,7 +382,8 @@ public final class WorldBuilder {
         for (int ty = 1; ty < map.height; ty++) {
             for (int tx = 0; tx < map.width; tx++) {
                 int lx = tx % c, ly = ty % c;
-                if (map.solid(tx, ty) || !map.solid(tx, ty - 1) || lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1) continue;
+                // real rock above (not a crate), so the words are on the wall face
+                if (map.solid(tx, ty) || map.get(tx, ty - 1) != Tile.WALL || lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1) continue;
                 if (Math.abs(lx - mid) <= 1 && ly <= 2) continue; // not over the north doorway
                 northWalls.computeIfAbsent(ty / c * level.cellsW() + tx / c, k -> new ArrayList<>()).add(new int[]{tx, ty});
             }
@@ -391,12 +393,16 @@ public final class WorldBuilder {
             RoomTheme theme = RoomTheme.of(level.roomNames()[cell]);
             double rcx = TileMap.center(cell % level.cellsW() * c + mid), rcy = TileMap.center(cell / level.cellsW() * c + mid);
             List<double[]> doors = WorldGenerator.doorways(map, rcx, rcy);
+            // numbered like a real mine: crew rooms A, B, C...; the rest count up with a few gaps
+            int n = theme == RoomTheme.QUARTERS ? numbers.merge(theme, 1, Integer::sum)
+                    : numbers.merge(theme, rng.range(1, 4), (prev, step) -> prev + 1 + rng.range(0, 2));
+            String label = theme == RoomTheme.QUARTERS ? Lang.t("sign.QUARTERS", (char) ('A' + n - 1)) : Lang.t("sign." + theme.name(), n);
             // the spot on the north wall nearest a way in
             double[] best = null;
             double bestD = Double.MAX_VALUE;
             for (int[] t : northWalls.get(cell)) {
                 double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
-                if (!clear(taken, x, y, 20)) continue;
+                if (!clear(taken, x, y, 20) || !fitsOnWall(map, t[0], t[1], Weathered.width(label))) continue;
                 double d = Double.MAX_VALUE;
                 for (double[] dr : doors) d = Math.min(d, Math.hypot(dr[0] - x, dr[1] - y));
                 if (d < bestD) {
@@ -405,13 +411,9 @@ public final class WorldBuilder {
                 }
             }
             if (best == null) continue;
-            // numbered like a real mine: crew rooms A, B, C...; the rest count up with a few gaps
-            int n = theme == RoomTheme.QUARTERS ? numbers.merge(theme, 1, Integer::sum)
-                    : numbers.merge(theme, rng.range(1, 4), (prev, step) -> prev + 1 + rng.range(0, 2));
-            String label = theme == RoomTheme.QUARTERS ? Lang.t("sign.QUARTERS", (char) ('A' + n - 1)) : Lang.t("sign." + theme.name(), n);
             RoomSign.Damage damage = theme == RoomTheme.SHRINE ? RoomSign.Damage.CLAWED
                     : theme == RoomTheme.FLOODED ? RoomSign.Damage.MUDDY : RoomSign.Damage.NONE;
-            world.add(new RoomSign(best[0], best[1], label, damage));
+            world.add(new RoomSign(best[0], best[1], label, damage, theme == RoomTheme.LIFT));
             taken.add(best);
             signs.put(cell, best);
         }
@@ -432,15 +434,29 @@ public final class WorldBuilder {
             for (int[] t : spots) {
                 double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
                 double[] sign = signs.get(cell);
-                if (sign != null && Math.hypot(sign[0] - x, sign[1] - y) < 48 || !clear(taken, x, y, 20)) continue;
                 String line = lines.get(rng.range(0, lines.size()));
+                if (sign != null && Math.hypot(sign[0] - x, sign[1] - y) < 48 || !clear(taken, x, y, 20)
+                        || !fitsOnWall(map, t[0], t[1], Weathered.width(line))) continue;
                 used.add(line);
-                world.add(new Scrawl(x, y, line, rng.chance(0.6), (float) rng.range(-0.08, 0.08)));
+                world.add(new Scrawl(x, y, line, rng.chance(0.3), rng.range(-2, 3)));
                 taken.add(new double[]{x, y});
                 want--;
                 break;
             }
         }
+    }
+
+    /**
+     * Whether lettering this many pixels wide, centred over tile (tx, ty), lies wholly on rock:
+     * every tile it covers has a wall above it with its face showing.
+     */
+    private static boolean fitsOnWall(TileMap map, int tx, int ty, int width) {
+        int half = (width + 1) / 2;
+        int from = TileMap.toTile(TileMap.center(tx) - half), to = TileMap.toTile(TileMap.center(tx) + half - 1);
+        for (int x = from; x <= to; x++) {
+            if (map.get(x, ty - 1) != Tile.WALL || map.get(x, ty).opaque) return false;
+        }
+        return true;
     }
 
     /** Number of open tiles reachable from tile index start. */

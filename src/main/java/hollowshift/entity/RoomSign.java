@@ -1,85 +1,85 @@
 package hollowshift.entity;
 
-import hollowshift.engine.gfx.Fonts;
+import hollowshift.engine.Rng;
+import hollowshift.engine.gfx.Weathered;
 
 import java.awt.*;
-import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 
 /**
- * A painted board by the way into a room: "STORE 3", "CREW ROOM B". The shrine sign has been
- * clawed at and the sump sign is half under dried mud.
+ * A room name stencilled straight onto the rock by the way in ("STORE 3", "CREW ROOM B"), decades
+ * ago: faded, flaking, run with drips. The shrine one has been clawed at, the sump one is caked
+ * in dried mud. Part of the pixel art, so it is only legible where light falls.
  */
-public final class RoomSign extends Entity implements WallWriting {
+public final class RoomSign extends Entity {
     public enum Damage { NONE, CLAWED, MUDDY }
 
-    private final Font font;
     private final String text;
     private final Damage damage;
-    private final int width;
+    /** The lift shaft is marked black on a band of old safety yellow, everything else in oxide red. */
+    private final boolean safetyYellow;
+    private BufferedImage image;
 
-    public RoomSign(double x, double y, String text, Damage damage) {
+    public RoomSign(double x, double y, String text, Damage damage, boolean safetyYellow) {
         super(x, y);
         this.text = text;
         this.damage = damage;
-        font = Fonts.sign(7f, text);
-        // a board a little wider than its lettering, measured in the logical 640x360 space
-        Graphics2D m = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB).createGraphics();
-        width = (int) Math.ceil(m.getFontMetrics(font).getStringBounds(text, m).getWidth()) + 8;
-        m.dispose();
+        this.safetyYellow = safetyYellow;
     }
 
     public String text() {
         return text;
     }
 
-    private int top() {
-        return (int) Math.round(y) - 21; // on the wall face above the tile
-    }
-
     @Override
     public double sortY() {
-        return y - 16;
+        return y - 16; // on the wall, behind anyone standing in front of it
+    }
+
+    private BufferedImage image() {
+        if (image != null) return image;
+        long seed = (long) (x * 31 + y * 17);
+        Color paint = safetyYellow ? new Color(26, 22, 20, 235) : new Color(118, 34, 26, 235);
+        image = Weathered.paint(text, paint, seed);
+        Graphics2D g = image.createGraphics();
+        Rng rng = new Rng(seed + 3);
+        if (safetyYellow) {
+            // the yellow band goes on first, under the black letters, and has flaked too
+            BufferedImage band = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            for (int yy = 0; yy < band.getHeight(); yy++)
+                for (int xx = 0; xx < band.getWidth(); xx++)
+                    if (!rng.chance(0.18)) band.setRGB(xx, yy, new Color(190, 156, 60, rng.chance(0.3) ? 150 : 215).getRGB());
+            Graphics2D b = band.createGraphics();
+            b.drawImage(image, 0, 0, null);
+            b.dispose();
+            image = band;
+            g.dispose();
+            g = image.createGraphics();
+        }
+        if (damage == Damage.CLAWED) {
+            // four parallel gouges through the letters
+            g.setColor(new Color(30, 22, 20, 230));
+            int x0 = rng.range(0, Math.max(1, image.getWidth() - 10));
+            for (int i = 0; i < 4; i++) g.drawLine(x0 + i * 2, 0, x0 + i * 2 + 5, image.getHeight() - 1);
+        } else if (damage == Damage.MUDDY) {
+            // splashes of dried silt over the right half, thick in places, patchy in others
+            int w = image.getWidth(), h = image.getHeight();
+            for (int yy = 0; yy < h; yy++)
+                for (int xx = w / 2; xx < w; xx++) {
+                    double cover = (xx - w / 2.0) / (w / 2.0) * 0.9 + (yy > h / 2 ? 0.25 : 0);
+                    if (rng.chance(cover)) image.setRGB(xx, yy, new Color(70, 54, 36, rng.chance(0.5) ? 200 : 240).getRGB());
+                }
+        }
+        g.dispose();
+        return image;
     }
 
     @Override
     public void render(Graphics2D g, int ox, int oy) {
-        int sx = (int) Math.round(x) - width / 2 - ox, sy = top() - oy;
-        g.setColor(new Color(16, 12, 10));
-        g.fillRect(sx - 1, sy - 1, width + 2, 12);
-        g.setColor(new Color(92, 70, 46));
-        g.fillRect(sx, sy, width, 10);
-        g.setColor(new Color(112, 86, 58));
-        g.drawLine(sx, sy, sx + width - 1, sy);
-        g.setColor(new Color(70, 52, 34));
-        g.drawLine(sx, sy + 5, sx + width - 1, sy + 5);
-        g.setColor(new Color(150, 150, 160));
-        g.fillRect(sx + 1, sy + 1, 1, 1);
-        g.fillRect(sx + width - 2, sy + 1, 1, 1);
-    }
-
-    @Override
-    public void renderWriting(Graphics2D g, int ox, int oy, double light) {
-        int a = (int) (255 * Math.min(1, light * 1.6));
-        if (a < 8) return;
-        float cx = (float) (x - ox), base = top() - oy + 8f;
-        Graphics2D t = (Graphics2D) g.create();
-        t.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        t.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        t.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        t.setFont(font);
-        float w = (float) t.getFontMetrics().getStringBounds(text, t).getWidth();
-        // the board is lit by the lighting pass; the paint is dimmed to match
-        t.setColor(new Color(226, 214, 180, a));
-        t.drawString(text, cx - w / 2, base);
-        if (damage == Damage.CLAWED) {
-            t.setStroke(new BasicStroke(0.7f));
-            t.setColor(new Color(40, 26, 20, a));
-            for (int i = 0; i < 3; i++) t.draw(new Line2D.Float(cx - w / 2 + 2 + i * 2.2f, base - 7, cx - w / 2 + 6 + i * 2.6f, base + 1));
-        } else if (damage == Damage.MUDDY) {
-            t.setColor(new Color(64, 50, 34, a * 15 / 16));
-            t.fillOval((int) cx - 1, (int) base - 9, (int) (w / 2) + 6, 12);
-        }
-        t.dispose();
+        BufferedImage im = image();
+        // centred on the wall face above the tile (the face spans the 16 px above the floor tile)
+        int sx = (int) Math.round(x) - im.getWidth() / 2 - ox;
+        int sy = (int) Math.round(y) - 8 - 16 + (16 - im.getHeight()) / 2 - oy;
+        g.drawImage(im, sx, sy, null);
     }
 }

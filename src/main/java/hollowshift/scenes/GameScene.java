@@ -195,7 +195,6 @@ public final class GameScene extends Scene {
     @Override
     public void renderOverlay(Graphics2D g) {
         if (world.death() != null || paused) return;
-        if (!world.objectives().escaping()) world.renderWriting(g);
         if (journal != null) {
             journal.render(g, game.input);
         } else if (world.reading() != null) {

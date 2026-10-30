@@ -1,24 +1,27 @@
 package hollowshift.entity;
 
-import hollowshift.engine.gfx.Fonts;
+import hollowshift.engine.gfx.Weathered;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 
 /**
- * Something someone wrote on the rock in chalk or with a lump of coal. It only shows when your
- * light is on it and you are close enough to make it out.
+ * Something someone wrote on the rock in chalk or with a lump of coal: wobbly, broken strokes,
+ * faint. Part of the pixel art, so you only make it out with a light on it.
  */
-public final class Scrawl extends Entity implements WallWriting {
-    private static final double READ_RANGE = 90;
+public final class Scrawl extends Entity {
     private final String text;
     private final boolean chalk;
-    private final float tilt;
+    /** Pixels the line sits above or below the middle of the wall face. */
+    private final int lift;
+    private BufferedImage image;
 
-    public Scrawl(double x, double y, String text, boolean chalk, float tilt) {
+    public Scrawl(double x, double y, String text, boolean chalk, int lift) {
         super(x, y);
         this.text = text;
         this.chalk = chalk;
-        this.tilt = tilt;
+        this.lift = lift;
     }
 
     public String text() {
@@ -26,30 +29,18 @@ public final class Scrawl extends Entity implements WallWriting {
     }
 
     @Override
-    public void render(Graphics2D g, int ox, int oy) {
-        // nothing in the pixel layer: the letters are drawn on the overlay
+    public double sortY() {
+        return y - 16;
     }
 
     @Override
-    public void renderWriting(Graphics2D g, int ox, int oy, double light) {
-        double near = 1 - Math.max(0, world.player.distanceTo(x, y) - 40) / (READ_RANGE - 40);
-        int a = (int) (230 * Math.min(1, light * 1.8) * Math.max(0, Math.min(1, near)));
-        if (a < 8) return;
-        Graphics2D t = (Graphics2D) g.create();
-        t.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        t.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        t.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        t.setFont(Fonts.scrawl(7.5f, text));
-        float w = (float) t.getFontMetrics().getStringBounds(text, t).getWidth();
-        t.translate(x - ox, y - oy - 12);
-        t.rotate(tilt);
-        if (!chalk) {
-            // coal on dark rock needs a faint pale edge to read at all
-            t.setColor(new Color(150, 140, 120, a / 3));
-            t.drawString(text, -w / 2 + 0.4f, 0.4f);
+    public void render(Graphics2D g, int ox, int oy) {
+        if (image == null) {
+            Color stroke = chalk ? new Color(232, 228, 214, 215) : new Color(20, 18, 18, 225);
+            image = Weathered.scrawl(text, stroke, (long) (x * 13 + y * 29));
         }
-        t.setColor(chalk ? new Color(222, 218, 206, a) : new Color(20, 18, 18, a));
-        t.drawString(text, -w / 2, 0);
-        t.dispose();
+        int sx = (int) Math.round(x) - image.getWidth() / 2 - ox;
+        int sy = (int) Math.round(y) - 8 - 16 + (16 - image.getHeight()) / 2 + lift - oy;
+        g.drawImage(image, sx, sy, null);
     }
 }

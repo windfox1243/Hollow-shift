@@ -202,16 +202,6 @@ public final class World {
         return Math.min(1, best);
     }
 
-    /** Signs and scrawls on the overlay, each as bright as its spot is lit. */
-    public void renderWriting(Graphics2D g) {
-        int ox = camera.left(), oy = camera.top();
-        for (Entity e : entities) {
-            if (!(e instanceof WallWriting w) || !camera.visible(e.x, e.y, 64)) continue;
-            double light = visibilityAt(e.x, e.y - 12, true);
-            if (light > 0) w.renderWriting(g, ox, oy, light);
-        }
-    }
-
     /** Warmth from heat-giving lights (not the lantern), 0..1. */
     public double warmthAt(double x, double y) {
         double best = 0;

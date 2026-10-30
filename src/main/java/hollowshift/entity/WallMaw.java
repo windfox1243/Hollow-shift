@@ -133,7 +133,8 @@ public final class WallMaw extends Entity {
         else if (regrow > 0) reach = 0.15;
         else reach = 0.35 + Math.sin(t * 2.1) * 0.08; // slowly tasting the air
         Graphics2D s = (Graphics2D) g.create();
-        s.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        // hard pixel strokes like the rest of the art, no smoothing
+        s.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_OFF);
         for (int i = 0; i < STRANDS; i++) {
             double spread = (i - (STRANDS - 1) / 2.0) / STRANDS;
             double ang = Math.atan2(-wy, -wx) + spread * 2.2;
@@ -149,12 +150,17 @@ public final class WallMaw extends Entity {
             Path2D path = new Path2D.Double();
             path.moveTo(rx, ry);
             path.quadTo(mx, my, ex, ey);
-            s.setStroke(new BasicStroke(i % 2 == 0 ? 2.2f : 1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            s.setStroke(new BasicStroke(i % 2 == 0 ? 2f : 1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
             s.setColor(new Color(70, 18, 30));
             s.draw(path);
-            s.setStroke(new BasicStroke(0.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            s.setColor(new Color(150, 60, 70));
-            s.draw(path);
+            if (i % 2 == 0) {
+                // a pale highlight only on the thick strands, offset by a pixel
+                s.setStroke(new BasicStroke(1f));
+                s.setColor(new Color(130, 50, 60));
+                s.translate(0, -1);
+                s.draw(path);
+                s.translate(0, 1);
+            }
         }
         s.dispose();
     }
