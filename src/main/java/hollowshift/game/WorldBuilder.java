@@ -19,7 +19,7 @@ public final class WorldBuilder {
     }
 
     /** Seconds the Tenant sleeps at the start of every shift before it starts to hunt. */
-    public static final double DORMANT = 25;
+    public static final double DORMANT = 10;
 
     /** Every shift, the final one included, is a freshly generated map. */
     public static World build(Services services, ShiftDef shift, long seed) {

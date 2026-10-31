@@ -21,7 +21,7 @@ public final class EchoState extends CreatureState {
     /** How long before it emerges the rumble starts. */
     private static final double WARNING = 1.0;
     /** It never comes out of a doorway closer than this to the player. */
-    public static final double MIN_DISTANCE = 260;
+    public static final double MIN_DISTANCE = 150;
     private final double nx, ny;
     private double t;
     private double[] spot;

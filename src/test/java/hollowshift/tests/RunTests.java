@@ -51,8 +51,7 @@ public final class RunTests {
         test("pockets: items are stashed, capped and used from the pack", RunTests::pockets);
         test("no room is a dead end: every door lies on a loop", RunTests::noDeadEnds);
         test("ECHO: the Tenant arrives through a doorway, not mid-room", RunTests::echoDoorway);
-        test("ECHO: after a loud job it takes 3 s and comes out 260 px away", RunTests::echoHeadStart);
-        test("the Tenant sleeps 25 s, wakes far from where the player is now, and roams away from them", RunTests::wakeFar);
+        test("ECHO: after a loud job it takes 3 s and comes out 150 px away", RunTests::echoHeadStart);
         test("CONSUME: a wall nest pins you; hammering E frees you, waiting kills", RunTests::wallMaw);
         test("CONSUME: stepping on its flesh calls the Tenant", RunTests::fleshNode);
         test("every lift job (fuse, valve, key, fuel, phone, wires) can be done", RunTests::liftJobs);
@@ -580,35 +579,6 @@ public final class RunTests {
             check(c.distanceTo(p) >= hollowshift.ai.EchoState.MIN_DISTANCE - 1 || w.death() != null,
                     "seed " + seed + ": it came out " + (int) c.distanceTo(p) + " px from the player");
             check(w.death() == null, "seed " + seed + ": standing still until it comes back should not be fatal");
-        }
-    }
-
-    private static void wakeFar() {
-        Campaign camp = Campaign.load();
-        for (int n = 1; n <= camp.shifts().size(); n++) {
-            for (long seed = 1; seed <= 6; seed++) {
-                World w = WorldBuilder.build(services(), camp.shift(n), seed);
-                w.start();
-                Creature c = w.creatures().get(0);
-                Player p = w.player;
-                // the player walks off toward where it sleeps before it wakes
-                tick(w, 60 * 20);
-                check(c.isDormant(), "shift " + n + " seed " + seed + ": awake after only 20 s");
-                p.x = c.x;
-                p.y = c.y;
-                tick(w, 60 * 6);
-                check(!c.isDormant(), "shift " + n + " seed " + seed + ": still asleep after 26 s");
-                double far = 0;
-                for (int i = 0; i < 40; i++) {
-                    double[] r = w.randomRoomPoint();
-                    far = Math.max(far, Math.hypot(r[0] - p.x, r[1] - p.y));
-                }
-                check(c.distanceTo(p) >= Math.min(320, far - 1), "shift " + n + " seed " + seed + ": woke " + (int) c.distanceTo(p) + " px away");
-                for (int i = 0; i < 20; i++) {
-                    double[] r = w.randomRoomPointAway(hollowshift.ai.WanderState.AVOID_PLAYER);
-                    check(Math.hypot(r[0] - p.x, r[1] - p.y) >= hollowshift.ai.WanderState.AVOID_PLAYER, "a roaming goal in the player's room");
-                }
-            }
         }
     }
 

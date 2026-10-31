@@ -30,7 +30,7 @@ Một số việc mở ra một tấm bảng thép nhỏ giữa màn hình. Ca k
 | HEARING | Tenant | `HearingSense`: nghe noise trong bán kính; ở dưới nửa bán kính thì đuổi |
 | SMELL | Tenant | `SmellSense`: đánh hơi theo chu kỳ, đoán vị trí có sai số; có âm báo |
 | CONSUME | Tenant | `WallMaw`: tổ xúc tu trên vách, đứng sát là bị ghim vào tường và **gọi quái tới** (ở xa thì nó xuyên đá ra cửa phòng đó), bấm E liên tục để giật ra (5 giây là bị nuốt); `FleshNode`: cục thịt dưới sàn, rải nhiều, hay nằm ngay cạnh đồ cần nhặt và ở cửa phòng, giẫm phải là nó biết chỗ bạn |
-| ECHO | Tenant | `EchoSense` + `EchoState`: tiếng động lớn kéo nó dịch chuyển tới. Nó lặn vào đá khoảng 3,4 giây, 1 giây trước khi ra có tiếng rùng rùng ở đúng cửa nó sẽ chui ra; nó ra ở cửa của phòng có tiếng động (hoặc phòng kề bên) cách người chơi ít nhất 260px (ngoài tầm nhìn ngang), rồi lùng sục chỗ đó |
+| ECHO | Tenant | `EchoSense` + `EchoState`: tiếng động lớn kéo nó dịch chuyển tới. Nó lặn vào đá khoảng 3,4 giây, 1 giây trước khi ra có tiếng rùng rùng ở đúng cửa nó sẽ chui ra; nó ra ở cửa của phòng có tiếng động (hoặc phòng kề bên) cách người chơi ít nhất 150px, rồi lùng sục chỗ đó |
 | HASTE | Tenant | Tốc độ tăng 7% mỗi phút (tối đa +50%) |
 | BATTERY | Bạn | `BatteryEffect`: đèn lồng hao pin, nhặt cell để sạc |
 | COLD | Bạn | `ColdEffect`: ở trong tối thì lạnh dần. Đèn lồng chỉ làm chậm lại; heater/đèn/flare sưởi ấm |
@@ -91,8 +91,8 @@ Không có luật giác quan nào thì Tenant chỉ đi lang thang, nhưng chạ
 - Lò sưởi chỉ đặt nhiều khi có luật COLD.
 - Hộp cầu chì có điện chỉ le lói, thang máy chỉ lóe một đốm, đèn lồng 88px.
 - Tenant:
-  - **chưa có mặt trong 25 giây đầu**; khi tỉnh, nó hiện ra ở phòng xa chỗ người chơi *đang đứng lúc đó* nhất, chỉ báo hiệu bằng một tiếng động vọng từ xa;
-  - khi lang thang, nó không chọn phòng nào cách người chơi dưới 260px làm điểm đến (tìm người chơi là việc của các giác quan);
+  - xuất hiện ở phòng xa người chơi nhất (tính theo khoảng cách thật và độ sâu);
+  - **chưa có mặt trong 10 giây đầu**, chỉ báo hiệu bằng một tiếng động vọng từ xa khi nó tới;
   - gần như không tự phát sáng;
   - mắt chỉ hiện khi ở trong 190px, và khi chưa đuổi thì chỉ thỉnh thoảng lóe lên.
 
