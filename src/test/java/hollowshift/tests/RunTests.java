@@ -13,6 +13,7 @@ import hollowshift.game.*;
 import hollowshift.game.Job;
 import hollowshift.rules.*;
 import hollowshift.story.Campaign;
+import hollowshift.story.Run;
 import hollowshift.story.SaveData;
 import hollowshift.story.ShiftDef;
 import hollowshift.world.*;
@@ -67,6 +68,7 @@ public final class RunTests {
         test("every room has its own sign; scrawls match the room and never repeat", RunTests::writing);
         test("COLD: the dark freezes faster than lantern light", RunTests::coldDark);
         test("a note picked up is kept in the journal", RunTests::notesKept);
+        test("replaying an early shift, the journal hides notes from later shifts", RunTests::journalNoSpoilers);
         test("the lantern drains in every shift, faster under BATTERY", RunTests::lanternDrains);
         test("every shift runs 90 simulated seconds with a random bot", RunTests::simulation);
         System.out.printf("%n%d passed, %d failed%n", passed, failed);
@@ -590,6 +592,21 @@ public final class RunTests {
         check(hollowshift.ai.Noise.machine(0, 0, Valve.NOISE).loud(), "a bled valve should");
         check(hollowshift.ai.Noise.machine(0, 0, Generator.START_NOISE).loud(), "a started generator should");
         check(new hollowshift.ai.Noise(0, 0, Stone.LAND_NOISE, false).loud(), "a thrown stone landing should");
+    }
+
+    private static void journalNoSpoilers() {
+        Set<Integer> read = new TreeSet<>(List.of(1, 2, 3, 4, 5, 9));
+        check(Run.story(1).journalNotes(read).equals(Set.of(1, 2)), "shift 1 shows " + Run.story(1).journalNotes(read));
+        check(Run.story(2).journalNotes(read).equals(Set.of(1, 2, 3, 4)), "shift 2 shows " + Run.story(2).journalNotes(read));
+        check(Run.story(5).journalNotes(read).equals(read), "the last shift shows every note");
+        // the notes a shift lays out are all inside what its journal shows
+        Campaign camp = Campaign.load();
+        for (int n = 1; n <= camp.shifts().size(); n++) {
+            World w = WorldBuilder.build(services(), camp.shift(n), 3);
+            Set<Integer> placed = new TreeSet<>();
+            for (Entity e : w.pendingEntities()) if (e instanceof Note) placed.add(placed.size() + 2 * n - 1);
+            check(Run.story(n).journalNotes(placed).equals(placed), "shift " + n + " hides its own notes");
+        }
     }
 
     private static void wallMaw() {

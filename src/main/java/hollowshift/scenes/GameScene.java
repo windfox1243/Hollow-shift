@@ -124,7 +124,7 @@ public final class GameScene extends Scene {
     }
 
     private void openJournal() {
-        Journal j = new Journal(game.save.notesRead, notePaper);
+        Journal j = new Journal(run.journalNotes(game.save.notesRead), notePaper);
         if (j.empty()) {
             world.toast(Lang.t("toast.journalEmpty"));
             return;

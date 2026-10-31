@@ -38,6 +38,18 @@ public final class Run {
         return mode == Mode.ENDLESS ? endlessSeed * 1_000_003L + shift : attemptSeed;
     }
 
+    /**
+     * The read notes the journal shows in this run. A story shift shows its own two notes and the
+     * ones before them, never notes read on a later shift in another play-through, so replaying
+     * shift 1 does not spoil what comes after.
+     */
+    public java.util.Set<Integer> journalNotes(java.util.Set<Integer> read) {
+        if (mode != Mode.STORY) return read;
+        java.util.Set<Integer> shown = new java.util.TreeSet<>();
+        for (int n : read) if (n <= shift * 2) shown.add(n);
+        return shown;
+    }
+
     public void newAttempt() {
         attemptSeed = System.nanoTime();
     }
