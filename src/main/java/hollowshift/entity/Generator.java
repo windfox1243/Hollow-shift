@@ -5,9 +5,10 @@ import hollowshift.engine.Lang;
 import hollowshift.game.Job;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 
 /** A diesel generator for the lift motor. Bring a can of fuel and pour it in; it coughs into life, loudly. */
-public final class Generator extends Fixture implements Interactable, LightSource {
+public final class Generator extends Fixture implements Interactable, LightSource, Beacon {
     public static final double START_NOISE = 420;
     private boolean running;
     private double t;
@@ -94,5 +95,10 @@ public final class Generator extends Fixture implements Interactable, LightSourc
     @Override
     public boolean warms() {
         return running;
+    }
+
+    @Override
+    public void renderSignal(Graphics2D g, int ox, int oy) {
+        SignalLamp.render(g, x + 5 - ox, y - 3 - oy, !running, world.time, (long) (x * 11 + y * 2));
     }
 }

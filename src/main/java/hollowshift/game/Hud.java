@@ -92,7 +92,7 @@ public final class Hud {
 
         // interaction prompt above the focused object
         Interactable f = p.focus();
-        if (f instanceof Entity e && f.prompt(p) != null) {
+        if (f instanceof Entity e && f.prompt(p) != null && w.panel() == null) {
             boolean can = f.canInteract(p);
             String key = Input.keyName(w.input().binding(Action.INTERACT)[0]);
             String text = can ? "[" + key + "] " + f.prompt(p) : f.prompt(p);

@@ -54,7 +54,11 @@ public final class RunTests {
         test("ECHO: after a loud job it takes 3 s and comes out 150 px away", RunTests::echoHeadStart);
         test("CONSUME: a wall nest pins you; hammering E frees you, waiting kills", RunTests::wallMaw);
         test("CONSUME: stepping on its flesh calls the Tenant", RunTests::fleshNode);
-        test("every lift job (fuse, valve, key, fuel, phone) can be done", RunTests::liftJobs);
+        test("every lift job (fuse, valve, key, fuel, phone, wires) can be done", RunTests::liftJobs);
+        test("minigames: a wrong number or a missed valve howls for the Tenant", RunTests::minigameHowls);
+        test("minigames: a crossed wire shorts loudly; the right ones finish the box", RunTests::wiring);
+        test("the phone number is chalked on walls, one digit per room, and remembered", RunTests::phoneCode);
+        test("signal lamps blink unevenly and settle once the job is done", RunTests::signalLamps);
         test("each run draws its own mix of jobs, placed in the map", RunTests::jobVariety);
         test("CONSUME: a wall nest wakes the Tenant and brings it", RunTests::nestSummons);
         test("CONSUME: flesh knots lie in wait beside useful things", RunTests::knotsAsBait);
@@ -617,15 +621,32 @@ public final class RunTests {
         World w = new World(sv, def, map, obj, 1);
         Player p = w.add(new Player(TileMap.center(4), TileMap.center(7)));
         w.start();
-        check(obj.remaining() == 5, "five jobs expected, got " + obj.remaining());
+        check(obj.remaining() == 6, "six jobs expected, got " + obj.remaining());
         obj.onJobDone(Job.FUSE);
         Valve v = w.add(new Valve(p.x, p.y));
         LiftKey k = w.add(new LiftKey(p.x + 40, p.y));
         Generator gen = w.add(new Generator(p.x, p.y));
         FuelCan can = w.add(new FuelCan(p.x, p.y));
-        Phone phone = w.add(new Phone(p.x, p.y));
+        Phone phone = w.add(new Phone(p.x, p.y, "407"));
+        JunctionBox box = w.add(new JunctionBox(p.x, p.y));
         tick(w, 1);
         v.interact(p);
+        check(w.panel() instanceof GaugePanel, "the valve opens its gauge");
+        GaugePanel gauge = (GaugePanel) w.panel();
+        for (int i = 0; i < 6000 && !v.isOpen(); i++) {
+            gauge.update(new Input(), 1 / 120.0);
+            if (gauge.needle() > gauge.band() + 0.03 && gauge.needle() < gauge.band() + GaugePanel.BAND - 0.03) gauge.turn();
+        }
+        check(v.isOpen() && gauge.isClosed(), "three turns in the green bleed the valve");
+        w.closePanel();
+        box.interact(p);
+        WiringPanel wires = (WiringPanel) w.panel();
+        for (int t = 0; t < WiringPanel.COLORS.length; t++) {
+            wires.pick(wires.terminal(t));
+            wires.join(t);
+        }
+        check(box.isWired(), "matching every colour finishes the box");
+        w.closePanel();
         k.interact(p);
         check(!gen.canInteract(p), "the generator needs fuel in hand");
         can.interact(p);
@@ -634,7 +655,117 @@ public final class RunTests {
         check(gen.isRunning() && !p.isHolding(), "the can should be poured in");
         check(!obj.exitOpen(), "the phone call is still missing");
         phone.interact(p);
+        DialPanel dial = (DialPanel) w.panel();
+        for (char ch : "407".toCharArray()) dial.press(String.valueOf(ch));
+        for (int i = 0; i < 120; i++) dial.update(new Input(), 1 / 60.0);
+        check(phone.isCalled(), "the right number gets through");
         check(obj.exitOpen(), "all jobs done, the lift should run");
+    }
+
+    private static void minigameHowls() {
+        Services sv = services();
+        World w = room(sv, 300);
+        Creature c = w.creatures().get(0);
+        c.setDormant(10);
+        Player p = w.player;
+        Phone phone = w.add(new Phone(p.x, p.y, "123"));
+        tick(w, 1);
+        phone.interact(p);
+        tick(w, 1);
+        // standing at the machine, the miner does not walk off
+        double x0 = p.x;
+        sv.input().simulate(KeyEvent.VK_D, true);
+        sv.input().poll();
+        tick(w, 30);
+        sv.input().simulate(KeyEvent.VK_D, false);
+        sv.input().poll();
+        check(Math.abs(p.x - x0) < 0.5, "the player should stand still at the keypad");
+        DialPanel dial = (DialPanel) w.panel();
+        for (char ch : "999".toCharArray()) dial.press(String.valueOf(ch));
+        check(!phone.isCalled(), "a wrong number does not get through");
+        check(!c.isDormant(), "the howl wakes the Tenant even in its first sleep");
+        tick(w, 30);
+        check(c.isChasing(), "a wrong number brings the Tenant straight to the phone");
+
+        World w2 = room(sv, 300);
+        Creature c2 = w2.creatures().get(0);
+        Valve v = w2.add(new Valve(w2.player.x, w2.player.y));
+        tick(w2, 1);
+        v.interact(w2.player);
+        GaugePanel gauge = (GaugePanel) w2.panel();
+        while (gauge.needle() >= gauge.band() - 0.02 && gauge.needle() <= gauge.band() + GaugePanel.BAND + 0.02) gauge.update(new Input(), 1 / 120.0);
+        gauge.turn();
+        check(gauge.turns() == 0 && !v.isOpen(), "a turn outside the green does nothing for the valve");
+        tick(w2, 30);
+        check(c2.isChasing(), "the relief whistle brings the Tenant");
+    }
+
+    private static void wiring() {
+        Services sv = services();
+        World w = room(sv, 600);
+        JunctionBox box = w.add(new JunctionBox(w.player.x, w.player.y));
+        tick(w, 1);
+        box.interact(w.player);
+        WiringPanel p = (WiringPanel) w.panel();
+        // hold the wire terminal 0 does not take, and push it onto terminal 0
+        int held = p.terminal(0) == 0 ? 1 : 0;
+        p.pick(held);
+        p.join(0);
+        check(w.noises.loudestRecent() >= WiringPanel.SHORT_NOISE - 1, "a short should be loud");
+        check(!box.isWired(), "a short does not wire anything");
+        for (int t = 0; t < WiringPanel.COLORS.length; t++) {
+            p.pick(p.terminal(t));
+            p.join(t);
+        }
+        check(box.isWired() && p.isClosed(), "every wire on its own colour finishes the box");
+    }
+
+    private static void phoneCode() {
+        Campaign camp = Campaign.load();
+        int found = 0;
+        for (int n = 2; n < camp.shifts().size(); n++) {
+            ShiftDef def = camp.shift(n);
+            for (long seed = 1; seed <= 60; seed++) {
+                if (!WorldBuilder.drawJobs(def, seed).containsKey(Job.PHONE)) continue;
+                found++;
+                World w = WorldBuilder.build(services(), def, seed);
+                Phone phone = (Phone) w.pendingEntities().stream().filter(e -> e instanceof Phone).findFirst().orElseThrow();
+                List<CodeMark> marks = new ArrayList<>();
+                for (Entity e : w.pendingEntities()) if (e instanceof CodeMark m) marks.add(m);
+                // every digit is either on a wall or (no wall anywhere) known from the start
+                String memo = w.codeMemo().replace(" ", "");
+                check(marks.size() + memo.replace("_", "").length() == 3, "seed " + seed + ": digits " + marks.size() + " memo " + memo);
+                Set<Integer> cells = new HashSet<>();
+                for (CodeMark m : marks) {
+                    check(m.text().matches(".*[0-9].*"), "a mark shows its digit: " + m.text());
+                    cells.add(TileMap.toTile(m.y) / WorldGenerator.CHUNK * 100 + TileMap.toTile(m.x) / WorldGenerator.CHUNK);
+                }
+                check(cells.size() == marks.size(), "seed " + seed + ": two digits in one room");
+                check(phone.code().length() == 3, "three-digit number");
+                // walk up to each mark with the lantern on and the number is remembered
+                w.start();
+                for (CodeMark m : marks) {
+                    w.player.x = m.x;
+                    w.player.y = m.y + 10;
+                    m.update(0.016);
+                }
+                check(w.codeMemo().replace(" ", "").equals(phone.code()), "seed " + seed + ": memo " + w.codeMemo() + " vs " + phone.code());
+            }
+        }
+        check(found > 0, "no phone drawn in any seed");
+    }
+
+    private static void signalLamps() {
+        boolean on = false, off = false;
+        for (double t = 0; t < 12; t += 0.01) {
+            double v = SignalLamp.level(t, 42);
+            on |= v > 0.5;
+            off |= v == 0;
+        }
+        check(on && off, "the lamp should both light and go dark");
+        int same = 0, n = 0;
+        for (double t = 0; t < 12; t += 0.05, n++) if ((SignalLamp.level(t, 1) > 0) == (SignalLamp.level(t, 2) > 0)) same++;
+        check(same < n * 0.9, "two lamps should not blink in step");
     }
 
     private static void jobVariety() {
@@ -653,6 +784,7 @@ public final class RunTests {
                 check(gens == jobs.getOrDefault(Job.FUEL, 0), "shift " + n + " seed " + seed + ": generators " + gens + " for " + jobs);
                 check(cans >= gens, "shift " + n + " seed " + seed + ": not enough fuel cans");
                 check(w.pendingEntities().stream().filter(e -> e instanceof Phone).count() == jobs.getOrDefault(Job.PHONE, 0), "phones");
+                check(w.pendingEntities().stream().filter(e -> e instanceof JunctionBox).count() == jobs.getOrDefault(Job.WIRES, 0), "junction boxes");
                 check(w.pendingEntities().stream().filter(e -> e instanceof LiftKey).count() == jobs.getOrDefault(Job.KEY, 0), "keys");
             }
             if (def.jobs() > 0 && def.jobs() < Job.EXTRAS.length) check(mixes.size() > 1, "shift " + n + " always asks for the same jobs");

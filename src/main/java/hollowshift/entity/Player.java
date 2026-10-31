@@ -67,6 +67,15 @@ public final class Player extends Entity implements LightSource {
             if (trappedBy != null && in.pressed(Action.INTERACT)) trappedBy.struggle();
             return;
         }
+        if (world.panel() != null) {
+            // hands busy at a machine: standing still, getting the breath back
+            moving = running = false;
+            vx = vy = 0;
+            holdProgress = 0;
+            stamina = Math.min(1, stamina + dt / 3.5);
+            if (exhausted && stamina > 0.35) exhausted = false;
+            return;
+        }
         double mx = 0, my = 0;
         if (in.held(Action.LEFT)) mx -= 1;
         if (in.held(Action.RIGHT)) mx += 1;

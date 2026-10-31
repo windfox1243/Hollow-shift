@@ -69,7 +69,13 @@ public final class WorldBuilder {
         machineSpots.addAll(byType.getOrDefault('i', List.of()));
         for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.VALVE, 0), rng, used, false)) world.add(new Valve(m.x(), m.y()));
         for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.FUEL, 0), rng, used, false)) world.add(new Generator(m.x(), m.y()));
-        for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.PHONE, 0), rng, used, true)) world.add(new Phone(m.x(), m.y()));
+        List<Phone> phones = new ArrayList<>();
+        for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.PHONE, 0), rng, used, true)) {
+            // the shaft's number: three digits, chalked on the walls one at a time
+            String code = "" + rng.range(1, 10) + rng.range(0, 10) + rng.range(0, 10);
+            phones.add(world.add(new Phone(m.x(), m.y(), code)));
+        }
+        for (Marker m : spreadPick(machineSpots, jobs.getOrDefault(Job.WIRES, 0), rng, used, false)) world.add(new JunctionBox(m.x(), m.y()));
         for (Marker m : spreadPick(byType.getOrDefault('i', List.of()), jobs.getOrDefault(Job.KEY, 0), rng, used, true)) {
             world.add(new LiftKey(m.x(), m.y()));
         }
@@ -145,6 +151,7 @@ public final class WorldBuilder {
             }
         }
         if (shift.rules().has(Rule.CONSUME)) placeGrowth(world, level, rng, playerSpot);
+        for (Phone ph : phones) placeCode(world, level, rng, ph);
         placeWriting(world, level, rng);
         decorate(world, level, rng, playerSpot);
         double[] spawn = openSpotInCell(level, far);
@@ -378,16 +385,7 @@ public final class WorldBuilder {
         for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
         Map<RoomTheme, Integer> numbers = new EnumMap<>(RoomTheme.class);
         Map<Integer, double[]> signs = new HashMap<>();
-        Map<Integer, List<int[]>> northWalls = new HashMap<>();
-        for (int ty = 1; ty < map.height; ty++) {
-            for (int tx = 0; tx < map.width; tx++) {
-                int lx = tx % c, ly = ty % c;
-                // real rock above (not a crate), so the words are on the wall face
-                if (map.solid(tx, ty) || map.get(tx, ty - 1) != Tile.WALL || lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1) continue;
-                if (Math.abs(lx - mid) <= 1 && ly <= 2) continue; // not over the north doorway
-                northWalls.computeIfAbsent(ty / c * level.cellsW() + tx / c, k -> new ArrayList<>()).add(new int[]{tx, ty});
-            }
-        }
+        Map<Integer, List<int[]>> northWalls = northWalls(level);
         for (int cell = 0; cell < level.depth().length; cell++) {
             if (level.depth()[cell] < 0 || !northWalls.containsKey(cell)) continue;
             RoomTheme theme = RoomTheme.of(level.roomNames()[cell]);
@@ -454,6 +452,63 @@ public final class WorldBuilder {
         }
     }
 
+    /** Per room, the floor tiles along its north wall where writing can go on the rock face. */
+    private static Map<Integer, List<int[]>> northWalls(WorldGenerator.Level level) {
+        TileMap map = level.map();
+        int c = WorldGenerator.CHUNK, mid = c / 2;
+        Map<Integer, List<int[]>> walls = new HashMap<>();
+        for (int ty = 1; ty < map.height; ty++) {
+            for (int tx = 0; tx < map.width; tx++) {
+                int lx = tx % c, ly = ty % c;
+                // real rock above (not a crate), so the words are on the wall face
+                if (map.solid(tx, ty) || map.get(tx, ty - 1) != Tile.WALL || lx == 0 || ly == 0 || lx == c - 1 || ly == c - 1) continue;
+                if (Math.abs(lx - mid) <= 1 && ly <= 2) continue; // not over the north doorway
+                walls.computeIfAbsent(ty / c * level.cellsW() + tx / c, k -> new ArrayList<>()).add(new int[]{tx, ty});
+            }
+        }
+        return walls;
+    }
+
+    /**
+     * The phone number, one digit per room, each in a different room other than the phone's own
+     * where the map allows. A digit that finds no wall at all is simply known from the start.
+     */
+    private static void placeCode(World world, WorldGenerator.Level level, Rng rng, Phone phone) {
+        TileMap map = level.map();
+        String code = phone.code();
+        world.setCodeLength(code.length());
+        Map<Integer, List<int[]>> walls = northWalls(level);
+        int phoneCell = TileMap.toTile(phone.y) / WorldGenerator.CHUNK * level.cellsW() + TileMap.toTile(phone.x) / WorldGenerator.CHUNK;
+        List<Integer> rooms = new ArrayList<>(walls.keySet());
+        rooms.removeIf(cell -> level.depth()[cell] < 0);
+        rng.shuffle(rooms);
+        // other rooms first; the phone's own room only if the map is that small
+        rooms.sort((a, b) -> Boolean.compare(a == phoneCell, b == phoneCell));
+        List<double[]> taken = new ArrayList<>();
+        for (Entity e : world.pendingEntities()) taken.add(new double[]{e.x, e.y});
+        Set<Integer> usedRooms = new HashSet<>();
+        for (int i = 0; i < code.length(); i++) {
+            String label = CodeMark.label(i, code.charAt(i), code.length());
+            boolean placed = false;
+            for (int cell : rooms) {
+                if (usedRooms.contains(cell) && usedRooms.size() < rooms.size()) continue;
+                List<int[]> spots = new ArrayList<>(walls.get(cell));
+                rng.shuffle(spots);
+                for (int[] t : spots) {
+                    double x = TileMap.center(t[0]), y = TileMap.center(t[1]);
+                    if (!clear(taken, x, y, 24) || !fitsOnWall(map, t[0], t[1], Weathered.width(label))) continue;
+                    world.add(new CodeMark(x, y, i, code.charAt(i), code.length()));
+                    taken.add(new double[]{x, y});
+                    usedRooms.add(cell);
+                    placed = true;
+                    break;
+                }
+                if (placed) break;
+            }
+            if (!placed) world.learnDigit(i, code.charAt(i));
+        }
+    }
+
     /**
      * Whether lettering this many pixels wide, centred over tile (tx, ty), lies wholly on rock:
      * every tile it covers has a wall above it with its face showing.
@@ -511,6 +566,7 @@ public final class WorldBuilder {
             jobs.put(j, switch (j) {
                 case VALVE -> 1 + (rng.chance(0.5) ? 1 : 0) + (late ? 1 : 0);
                 case FUEL -> 1 + (late && rng.chance(0.4) ? 1 : 0);
+                case WIRES -> 1 + (late && rng.chance(0.5) ? 1 : 0);
                 default -> 1;
             });
         }

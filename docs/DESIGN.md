@@ -7,9 +7,21 @@ Top-down survival horror, 640×360 pixel art, **100% Java SE** (Swing/Java2D + j
 1. **Briefing**: mở đầu ca bằng lời dẫn, sau đó công bố từng luật.
 2. **Ca làm việc**:
    - tìm cầu chì và lắp vào các hộp điện (mỗi lần lắp sẽ phát tiếng ồn lớn);
-   - khi đủ điện thì quay về thang máy và đi lên.
-3. **Ca cuối**: map vẽ tay. Kéo 3 cầu dao chính rồi sống sót 45 giây chờ thang. Trong lúc chờ, sinh vật nhanh hơn 15%.
+   - từ ca 2, mỗi lần chơi bốc thêm việc (`game.Job`): xả van, tìm chìa khóa, đổ dầu máy phát, gọi điện thoại, nối hộp dây;
+   - khi xong hết thì quay về thang máy và đi lên.
+3. **Ca cuối**: map sinh ngẫu nhiên. Kéo các cầu dao chính rồi sống sót 45 giây chờ thang. Trong lúc chờ, sinh vật nhanh hơn 15%.
 4. Chết thì hiện nguyên nhân và một mẹo. Có thể chơi lại ngay.
+
+## Minigame (`game.Panel`)
+Một số việc mở ra một tấm bảng thép nhỏ giữa màn hình. Ca không dừng: nhân vật đứng yên tay bận, quái vẫn đi, bóng tối quanh bảng vẫn nhìn thấy. Esc để rời máy.
+
+| Việc | Bảng | Làm sai |
+|---|---|---|
+| Điện thoại | `DialPanel`: bàn phím 3×4, nhập số 3 chữ số. Mỗi chữ số được sơn (đen trên dải vàng, kiểu "SỐ GỌI: ? 7 ?") ở một phòng khác, chỉ đọc được khi có đèn rọi; đọc rồi thì nhân vật nhớ và bảng hiện lại | chuông rú, `Creature.summon` gọi quái tới, kể cả lúc nó đang ngủ đầu ca |
+| Van áp suất | `GaugePanel`: kim lắc qua lại, vặn 3 lần khi kim nằm trong vạch xanh (kim nhanh dần) | còi xả áp rú, gọi quái tới |
+| Hộp nối dây | `WiringPanel`: 4 dây màu bên trái nối vào cọc cùng màu bên phải (có thêm vạch khắc để không phải dựa hoàn toàn vào màu) | chập điện, tiếng ồn 300 px |
+
+**Đèn tín hiệu** (`entity.SignalLamp`, interface `Beacon`): máy phát, điện thoại và hộp dây chưa xong có một đèn vàng cam vẽ đè lên bóng tối như mắt quái, nhấp nháy không đều (lúc chớp, lúc chập chờn, lúc tắt hẳn như mất điện). Xong việc thì thành một chấm xanh mờ.
 
 ## Luật (enum `rules.Rule`)
 | Luật | Chủ thể | Cài đặt |
@@ -125,8 +137,9 @@ Cách làm:
 - **Kế thừa**:
   - `Entity` → `Player`, `Creature`, `Item` (→ `Carryable` / `Consumable`), `Fixture`;
   - `Scene` → các màn hình;
-  - `Objectives` → `FuseObjectives`, `FinaleObjectives`.
-- **Interface**: `Interactable`, `LightSource`, `Sense`, `StatusEffect`.
+  - `Objectives` → `ShiftObjectives`, `FinaleObjectives`;
+  - `Panel` → `DialPanel`, `GaugePanel`, `WiringPanel`.
+- **Interface**: `Interactable`, `LightSource`, `Beacon`, `Sense`, `StatusEffect`.
 - **Strategy**: các `Sense` và `StatusEffect` được lắp ráp theo bộ luật của ca.
 - **State**: AI của Tenant gồm `WanderState`, `InvestigateState`, `ChaseState`, `ReachState`, `StunnedState`, `EchoState`.
 - **Observer/Event bus**: `NoiseBus` gom tiếng ồn mỗi tick cho các giác quan và cho HUD.

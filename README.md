@@ -3,13 +3,15 @@
 Game kinh dị sinh tồn 2d
 
 Giới thiệu:
-Bạn là thợ mỏ ca đêm ở Hầm 9. Tổ ca ngày xuống hầm từ sáng rồi không ai lên lại. Nhiệm vụ của bạn là làm cho thang máy chạy lại: tìm cầu chì cấp điện cho các hộp điện. Từ ca 2, mỗi lần chơi còn bốc thêm vài việc khác nhau: xả van áp suất, tìm chìa khóa cửa thang, xách can dầu đổ vào máy phát, quay điện thoại gọi lên trên. Xong thì đi thang lên. Nhưng dưới đó còn có một thứ khác.
+Bạn là thợ mỏ ca đêm ở Hầm 9. Tổ ca ngày xuống hầm từ sáng rồi không ai lên lại. Nhiệm vụ của bạn là làm cho thang máy chạy lại: tìm cầu chì cấp điện cho các hộp điện. Từ ca 2, mỗi lần chơi còn bốc thêm vài việc khác nhau: xả van áp suất, tìm chìa khóa cửa thang, xách can dầu đổ vào máy phát, nối lại hộp dây, gọi điện thoại lên trên. Xong thì đi thang lên. Nhưng dưới đó còn có một thứ khác.
 
 Đầu mỗi ca, game công bố luật chơi: nó cảm nhận bạn bằng cách nào (nhìn, nghe, ngửi, đi theo tiếng vọng…), nó đã lan tới đâu (xúc tu mọc trong vách đá, cục thịt dưới sàn), và ngoài nó ra còn thứ gì có thể giết bạn (giá lạnh, cái đói, đèn hết pin). Luật cộng dồn: ca sau giữ nguyên mọi luật của ca trước và thêm luật mới.
 
 ## Có gì trong game
 - Cốt truyện hé lộ dần qua lời dẫn mỗi ca và 10 mẩu giấy rải trong hầm. Game có **hai kết thúc**, một trong số đó là kết thúc ẩn.
 - Mỗi lần chơi là một bản đồ mới, kể cả màn cuối. Bản đồ luôn có đường vòng (hình chữ O, số 8, hành lang bao quanh một gian trung tâm…), nên không có phòng nào là ngõ cụt.
+- Một số việc là minigame, và thế giới không dừng lại khi bạn đang làm: quay đúng số điện thoại (3 chữ số sơn rải rác trên vách ở các phòng khác nhau), vặn van khi kim áp suất nằm trong vạch xanh, nối dây đúng màu. Làm sai là gây ồn: quay sai số hay vặn trượt van thì chuông và còi rú lên gọi thẳng nó tới, nối nhầm dây thì chập điện nổ đoàng.
+- Máy phát, điện thoại và hộp dây chưa xong có đèn tín hiệu chập chờn, sáng ngang mắt nó, nhìn thấy được từ xa trong bóng tối. Xong việc thì đèn chuyển xanh.
 - Chế độ vô tận: Tạo bởi seed :v
 - Hỗ trợ tiếng Việt và tiếng Anh.
 
@@ -49,7 +51,8 @@ Có thể đổi phím trong Cài đặt → Phím điều khiển.
 | G | thả cầu chì |
 | J | mở sổ ghi chép, đọc lại các mẩu giấy đã nhặt |
 | F | bật/tắt đèn lồng (đèn hao pin ở mọi ca) |
-| Esc | tạm dừng |
+| 0–9, phím mũi tên, E | bấm bàn phím điện thoại, vặn van, chọn và nối dây trong minigame |
+| Esc | rời minigame / tạm dừng |
 
 ## Cấu trúc thư mục
 - `src/main/java/hollowshift/`

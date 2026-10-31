@@ -52,6 +52,9 @@ public final class World {
     private DeathCause death;
     private String toast;
     private String reading;
+    private Panel panel;
+    /** The phone number's digits read off the walls so far, '_' where not yet seen. */
+    private char[] codeSeen;
     private int readingNumber;
     private double toastTimer;
     private Voice ambience;
@@ -169,6 +172,40 @@ public final class World {
         toast(Lang.t("toast.noteKept", hollowshift.engine.Input.keyName(input().binding(hollowshift.engine.Action.JOURNAL)[0])));
     }
 
+    /** Opens a machine's close-up; the shift runs on while it is open. */
+    public void openPanel(Panel p) {
+        panel = p;
+    }
+
+    public Panel panel() {
+        return panel;
+    }
+
+    public void closePanel() {
+        if (panel != null) panel.close();
+        panel = null;
+    }
+
+    /** How long the phone number is; call before any digit is learned. */
+    public void setCodeLength(int n) {
+        codeSeen = "_".repeat(n).toCharArray();
+    }
+
+    /** Reads digit d at place i off a wall; true if it was new. */
+    public boolean learnDigit(int i, char d) {
+        if (codeSeen == null || codeSeen[i] == d) return false;
+        codeSeen[i] = d;
+        return true;
+    }
+
+    /** The number as far as it is known, e.g. "4 _ 7". */
+    public String codeMemo() {
+        if (codeSeen == null) return "";
+        StringBuilder b = new StringBuilder();
+        for (char c : codeSeen) b.append(b.isEmpty() ? "" : " ").append(c);
+        return b.toString();
+    }
+
     public String toast() {
         return toastTimer > 0 ? toast : null;
     }
@@ -240,7 +277,13 @@ public final class World {
         if (death == null) {
             player.speedFactor = 1;
             for (StatusEffect e : effects) e.update(player, this, dt);
+            // the close-up shuts if something takes the miner's hands
+            if (panel != null && (panel.isClosed() || player.isFrozen())) closePanel();
+            if (panel != null) panel.update(services.input(), dt);
+            if (panel != null && panel.isClosed()) panel = null;
             player.handleInput(services.input(), dt);
+        } else {
+            panel = null;
         }
         for (Entity e : entities) if (!e.isRemoved() && e != player) e.update(dt);
         if (entities.removeIf(Entity::isRemoved)) lights.removeIf(l -> ((Entity) l).isRemoved());
@@ -338,5 +381,7 @@ public final class World {
         }
         lighting.end(g);
         for (Creature c : creatures) c.renderEyes(g, ox, oy);
+        // signal lamps on unfinished machines show through the dark too
+        for (Entity e : drawOrder) if (e instanceof Beacon b) b.renderSignal(g, ox, oy);
     }
 }

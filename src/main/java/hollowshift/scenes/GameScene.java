@@ -44,10 +44,6 @@ public final class GameScene extends Scene {
                     paused = false;
                     openJournal();
                 })
-                .add(Lang.t("pause.journal"), () -> {
-                    paused = false;
-                    openJournal();
-                })
                 .add(Lang.t("pause.restart"), () -> {
                     run.newAttempt();
                     game.scenes.set(new GameScene(game, run));
@@ -99,7 +95,11 @@ public final class GameScene extends Scene {
             }
             return;
         }
-        if (game.input.pressed(Action.BACK)) {
+        if (game.input.pressed(Action.BACK) && world.panel() != null) {
+            // step back from the machine; the shift never stopped
+            world.closePanel();
+            game.audio.ui("ui_back");
+        } else if (game.input.pressed(Action.BACK)) {
             paused = true;
             pauseMenu.select(0);
             game.audio.ui("ui_back");
@@ -112,7 +112,7 @@ public final class GameScene extends Scene {
             }
             return;
         }
-        if (game.input.pressed(Action.JOURNAL)) {
+        if (game.input.pressed(Action.JOURNAL) && world.panel() == null) {
             openJournal();
             return;
         }
@@ -169,6 +169,7 @@ public final class GameScene extends Scene {
             fearOverlay.render(g, world);
             hud.render(g, world);
             // notes are drawn into the pixel layer too, so they look like part of the game
+            if (world.panel() != null) world.panel().render(g);
             if (journal != null) {
                 journal.render(g, game.input);
             } else if (world.reading() != null) {

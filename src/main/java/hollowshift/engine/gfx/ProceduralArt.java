@@ -45,6 +45,7 @@ final class ProceduralArt {
             case "item_fuel" -> fuelCan();
             case "generator" -> generator(variant);
             case "phone" -> phone(variant == 1);
+            case "junction" -> junction(variant == 1);
             case "decor_bones" -> bones();
             case "decor_rubble" -> rubble(variant);
             case "decor_web" -> web();
@@ -620,6 +621,33 @@ final class ProceduralArt {
         g.drawLine(10, 8, 11, 11);
         g.setColor(OUTLINE);
         g.fillRect(4, 14, 4, 2);
+        g.dispose();
+        return im;
+    }
+
+    /** A junction box on the wall: door hanging open, wires torn loose (or neatly back in). */
+    private BufferedImage junction(boolean wired) {
+        BufferedImage im = img(14, 16);
+        Graphics2D g = im.createGraphics();
+        g.setColor(OUTLINE);
+        g.fillRect(0, 1, 12, 13);
+        g.setColor(new Color(84, 92, 86));
+        g.fillRect(1, 2, 10, 11);
+        g.setColor(new Color(40, 40, 42));
+        g.fillRect(2, 3, 8, 9);
+        Color[] wires = {new Color(200, 50, 40), new Color(230, 200, 60), new Color(60, 110, 220), new Color(80, 190, 90)};
+        for (int i = 0; i < 4; i++) {
+            g.setColor(wires[i]);
+            if (wired) g.drawLine(3 + i * 2, 4, 3 + i * 2, 10);
+            else g.drawLine(3 + i * 2, 4, 2 + i * 3 - (i % 2) * 2, 13 + i % 2);
+        }
+        // the door, swung open to the right
+        g.setColor(OUTLINE);
+        g.fillRect(12, 1, 2, 13);
+        g.setColor(new Color(110, 118, 110));
+        g.fillRect(12, 2, 1, 11);
+        g.setColor(new Color(214, 176, 82));
+        g.fillRect(4, 1, 4, 1); // a hazard stripe on the lid
         g.dispose();
         return im;
     }
