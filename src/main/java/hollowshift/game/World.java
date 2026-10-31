@@ -101,6 +101,27 @@ public final class World {
         return roomPoints.get(rng.range(0, roomPoints.size()));
     }
 
+    /** A random room centre at least {@code minDistance} from the player, or any one if none is that far. */
+    public double[] randomRoomPointAway(double minDistance) {
+        List<double[]> far = new ArrayList<>();
+        for (double[] r : roomPoints) if (Math.hypot(r[0] - player.x, r[1] - player.y) >= minDistance) far.add(r);
+        return far.isEmpty() ? randomRoomPoint() : far.get(rng.range(0, far.size()));
+    }
+
+    /** The room centre farthest from the player right now. */
+    public double[] farthestRoomPoint() {
+        double[] best = randomRoomPoint();
+        double bestD = -1;
+        for (double[] r : roomPoints) {
+            double d = Math.hypot(r[0] - player.x, r[1] - player.y);
+            if (d > bestD) {
+                bestD = d;
+                best = r;
+            }
+        }
+        return best;
+    }
+
     public List<Entity> entities() {
         return entities;
     }

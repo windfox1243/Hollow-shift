@@ -349,8 +349,13 @@ public final class Creature extends Entity implements LightSource {
     public void update(double dt) {
         if (dormant > 0) {
             dormant -= dt;
-            // it announces itself only with a distant sound from somewhere in the dark
-            if (dormant <= 0) world.audio.playAt("creature_step_heavy", world.player.x + 300, world.player.y, 900, 0.6, 0.6);
+            if (dormant <= 0) {
+                // the player has moved since the shift began: it wakes in the room farthest from them now
+                double[] far = world.farthestRoomPoint();
+                placeAt(far[0], far[1]);
+                // it announces itself only with a distant sound from somewhere in the dark
+                world.audio.playAt("creature_step_heavy", world.player.x + 300, world.player.y, 900, 0.6, 0.6);
+            }
             return;
         }
         pulse += dt * (isChasing() ? 9 : 4);
