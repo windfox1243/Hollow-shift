@@ -85,7 +85,7 @@ public final class WiringPanel extends Panel {
         wire = -1;
         world.audio.playAt("fuse_insert", box.x, box.y, 700, 1, 0.6);
         world.camera.shakeFrom(box.x, box.y, 15, 0.25);
-        world.emitNoise(new Noise(box.x, box.y, SHORT_NOISE, true));
+        world.emitNoise(Noise.machine(box.x, box.y, SHORT_NOISE));
         world.toast(Lang.t("toast.shorted"));
     }
 

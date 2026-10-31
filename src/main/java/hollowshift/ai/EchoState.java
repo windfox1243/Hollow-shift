@@ -20,8 +20,8 @@ public final class EchoState extends CreatureState {
     public static final double TRAVEL = 2.2;
     /** How long before it emerges the rumble starts. */
     private static final double WARNING = 1.0;
-    /** It never comes out of a doorway closer than this to the player. */
-    public static final double MIN_DISTANCE = 150;
+    /** It never comes out of a doorway inside the screen around the player: 640x360, plus room for its tentacles. */
+    public static final double MIN_DX = 380, MIN_DY = 240;
     private final double nx, ny;
     private double t;
     private double[] spot;
@@ -60,23 +60,31 @@ public final class EchoState extends CreatureState {
     }
 
     /**
-     * A doorway of the room the noise came from, or of a room next to it, at least
-     * {@link #MIN_DISTANCE} from the player; the one nearest the noise among those. If the player
-     * is close to every doorway around, the one farthest from them.
+     * A doorway off the player's screen, the one nearest the noise: first
+     * among the noise's room and the rooms next to it, then two rooms out. If the player is close
+     * to every one of those doorways, the one farthest from them.
      */
     private double[] findSpot(Creature c) {
+        double[] spot = findSpot(c, 1);
+        return spot != null ? spot : findSpot(c, 2);
+    }
+
+    /** Null when no doorway within {@code rooms} rooms is far enough, unless {@code rooms} is the last ring tried. */
+    private double[] findSpot(Creature c, int rooms) {
         Player p = c.world().player;
         TileMap map = c.world().map;
         double step = WorldGenerator.CHUNK * TileMap.TILE;
         List<double[]> doors = new ArrayList<>();
-        double[][] around = {{0, 0}, {step, 0}, {-step, 0}, {0, step}, {0, -step}};
-        for (double[] o : around) {
-            double x = nx + o[0], y = ny + o[1];
-            if (x < 0 || y < 0 || x >= map.width * TileMap.TILE || y >= map.height * TileMap.TILE) continue;
-            for (double[] d : WorldGenerator.doorways(map, x, y)) {
-                boolean dup = false;
-                for (double[] e : doors) dup |= Math.hypot(e[0] - d[0], e[1] - d[1]) < 1;
-                if (!dup) doors.add(d);
+        for (int oy = -rooms; oy <= rooms; oy++) {
+            for (int ox = -rooms; ox <= rooms; ox++) {
+                if (Math.abs(ox) + Math.abs(oy) > rooms) continue;
+                double x = nx + ox * step, y = ny + oy * step;
+                if (x < 0 || y < 0 || x >= map.width * TileMap.TILE || y >= map.height * TileMap.TILE) continue;
+                for (double[] d : WorldGenerator.doorways(map, x, y)) {
+                    boolean dup = false;
+                    for (double[] e : doors) dup |= Math.hypot(e[0] - d[0], e[1] - d[1]) < 1;
+                    if (!dup) doors.add(d);
+                }
             }
         }
         double[] best = null, farthest = null;
@@ -88,14 +96,20 @@ public final class EchoState extends CreatureState {
                 farthest = d;
             }
             double toNoise = Math.hypot(d[0] - nx, d[1] - ny);
-            if (toPlayer >= MIN_DISTANCE && toNoise < bestD) {
+            if (offScreen(p, d) && toNoise < bestD) {
                 bestD = toNoise;
                 best = d;
             }
         }
         if (best != null) return best;
+        if (rooms < 2) return null;
         if (farthest != null) return farthest;
         return new double[]{c.x, c.y}; // not a room grid: stay put
+    }
+
+    /** True when a point lies outside the screen centred on the player. */
+    public static boolean offScreen(Player p, double[] d) {
+        return Math.abs(d[0] - p.x) >= MIN_DX || Math.abs(d[1] - p.y) >= MIN_DY;
     }
 
     @Override

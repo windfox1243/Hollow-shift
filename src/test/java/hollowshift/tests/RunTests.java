@@ -51,7 +51,8 @@ public final class RunTests {
         test("pockets: items are stashed, capped and used from the pack", RunTests::pockets);
         test("no room is a dead end: every door lies on a loop", RunTests::noDeadEnds);
         test("ECHO: the Tenant arrives through a doorway, not mid-room", RunTests::echoDoorway);
-        test("ECHO: after a loud job it takes 3 s and comes out 150 px away", RunTests::echoHeadStart);
+        test("ECHO: after a loud job it takes 3 s and comes out off screen", RunTests::echoHeadStart);
+        test("ECHO: only machines count, never the player's steps or pick-ups", RunTests::echoMachinesOnly);
         test("CONSUME: a wall nest pins you; hammering E frees you, waiting kills", RunTests::wallMaw);
         test("CONSUME: stepping on its flesh calls the Tenant", RunTests::fleshNode);
         test("every lift job (fuse, valve, key, fuel, phone, wires) can be done", RunTests::liftJobs);
@@ -576,10 +577,19 @@ public final class RunTests {
             }
             check(i >= 60 * 3, "seed " + seed + ": it was back in " + i / 60.0 + " s");
             check(c.isVisibleInWorld(), "seed " + seed + ": it should be back by now");
-            check(c.distanceTo(p) >= hollowshift.ai.EchoState.MIN_DISTANCE - 1 || w.death() != null,
+            check(hollowshift.ai.EchoState.offScreen(p, new double[]{c.x, c.y}) || w.death() != null,
                     "seed " + seed + ": it came out " + (int) c.distanceTo(p) + " px from the player");
             check(w.death() == null, "seed " + seed + ": standing still until it comes back should not be fatal");
         }
+    }
+
+    private static void echoMachinesOnly() {
+        check(!new hollowshift.ai.Noise(0, 0, Player.PICKUP_NOISE, true).loud(), "a pick-up should not pull the Tenant");
+        check(!new hollowshift.ai.Noise(0, 0, Player.STEP_NOISE_RUN, true).loud(), "running should not pull the Tenant");
+        check(hollowshift.ai.Noise.machine(0, 0, FuseBox.SURGE_NOISE).loud(), "a fuse box surge should");
+        check(hollowshift.ai.Noise.machine(0, 0, Valve.NOISE).loud(), "a bled valve should");
+        check(hollowshift.ai.Noise.machine(0, 0, Generator.START_NOISE).loud(), "a started generator should");
+        check(new hollowshift.ai.Noise(0, 0, Stone.LAND_NOISE, false).loud(), "a thrown stone landing should");
     }
 
     private static void wallMaw() {

@@ -41,7 +41,7 @@ public final class Lever extends Fixture implements Interactable {
         world.audio.playAt("surge", x, y, 2000, 0.8, 1);
         world.audio.playAt("power_on", x, y, 800, 1, 0.8);
         world.camera.shakeFrom(x, y, 40, 0.5);
-        world.emitNoise(new Noise(x, y, 520, true));
+        world.emitNoise(Noise.machine(x, y, 520));
         world.objectives().onLeverPulled();
     }
 }

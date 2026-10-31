@@ -43,7 +43,7 @@ public final class FuseBox extends Fixture implements Interactable, LightSource 
         world.audio.playAt("fuse_insert", x, y, 600, 1, 1);
         world.audio.playAt("power_on", x, y, 600, 0.9, 1);
         world.camera.shakeFrom(x, y, 25, 0.3);
-        world.emitNoise(new Noise(x, y, SURGE_NOISE, true));
+        world.emitNoise(Noise.machine(x, y, SURGE_NOISE));
         world.objectives().onJobDone(hollowshift.game.Job.FUSE);
     }
 

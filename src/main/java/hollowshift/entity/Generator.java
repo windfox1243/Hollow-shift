@@ -52,7 +52,7 @@ public final class Generator extends Fixture implements Interactable, LightSourc
         world.audio.playAt("surge", x, y, 900, 1, 0.6);
         world.audio.playAt("power_on", x, y, 700, 1, 0.7);
         world.camera.shakeFrom(x, y, 40, 0.4);
-        world.emitNoise(new Noise(x, y, START_NOISE, true));
+        world.emitNoise(Noise.machine(x, y, START_NOISE));
         world.objectives().onJobDone(Job.FUEL);
     }
 

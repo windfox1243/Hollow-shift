@@ -30,7 +30,7 @@ Một số việc mở ra một tấm bảng thép nhỏ giữa màn hình. Ca k
 | HEARING | Tenant | `HearingSense`: nghe noise trong bán kính; ở dưới nửa bán kính thì đuổi |
 | SMELL | Tenant | `SmellSense`: đánh hơi theo chu kỳ, đoán vị trí có sai số; có âm báo |
 | CONSUME | Tenant | `WallMaw`: tổ xúc tu trên vách, đứng sát là bị ghim vào tường và **gọi quái tới** (ở xa thì nó xuyên đá ra cửa phòng đó), bấm E liên tục để giật ra (5 giây là bị nuốt); `FleshNode`: cục thịt dưới sàn, rải nhiều, hay nằm ngay cạnh đồ cần nhặt và ở cửa phòng, giẫm phải là nó biết chỗ bạn |
-| ECHO | Tenant | `EchoSense` + `EchoState`: tiếng động lớn kéo nó dịch chuyển tới. Nó lặn vào đá khoảng 3,4 giây, 1 giây trước khi ra có tiếng rùng rùng ở đúng cửa nó sẽ chui ra; nó ra ở cửa của phòng có tiếng động (hoặc phòng kề bên) cách người chơi ít nhất 150px, rồi lùng sục chỗ đó |
+| ECHO | Tenant | `EchoSense` + `EchoState`: tiếng máy móc lớn (không tính tiếng bước chân hay nhặt đồ) kéo nó dịch chuyển tới. Nó lặn vào đá khoảng 3,4 giây, 1 giây trước khi ra có tiếng rùng rùng ở đúng cửa nó sẽ chui ra; nó ra ở cửa của phòng có tiếng động (hoặc phòng kề bên) ngoài màn hình quanh người chơi (lệch ít nhất 380px ngang hoặc 240px dọc, chừa chỗ cho xúc tu; nếu quanh đó không có cửa nào đủ xa thì tìm ra tới hai phòng), rồi lùng sục chỗ đó |
 | HASTE | Tenant | Tốc độ tăng 7% mỗi phút (tối đa +50%) |
 | BATTERY | Bạn | `BatteryEffect`: đèn lồng hao pin, nhặt cell để sạc |
 | COLD | Bạn | `ColdEffect`: ở trong tối thì lạnh dần. Đèn lồng chỉ làm chậm lại; heater/đèn/flare sưởi ấm |

@@ -46,7 +46,7 @@ public final class JunctionBox extends Fixture implements Interactable, Beacon {
         if (wired) return;
         wired = true;
         world.audio.playAt("power_on", x, y, 600, 0.8, 1.3);
-        world.emitNoise(new Noise(x, y, NOISE, true));
+        world.emitNoise(Noise.machine(x, y, NOISE));
         world.objectives().onJobDone(Job.WIRES);
     }
 
